@@ -1,0 +1,2245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Per Annum - Portfolio Prototype</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            100: '#D2EBD9',
+                            500: '#5CBE74',
+                            600: '#3EA056',
+                            700: '#4F6E62',
+                            900: '#15372C',
+                        },
+                        neutralScale: {
+                            50: '#F9FAFB',
+                            100: '#F6F7F9',
+                            200: '#F0F1F4',
+                            300: '#D9D9D9',
+                            500: '#708090',
+                            900: '#1C1C1C',
+                        }
+                    },
+                    fontFamily: {
+                        sf: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif; background-color: #F9FAFB; color: #1C1C1C; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #F0F1F4; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #708090; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #15372C; }
+
+        .clickable-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .clickable-card:hover { transform: translateY(-2px); border-color: #15372C; box-shadow: 0 12px 20px -4px rgba(21, 55, 44, 0.08); }
+        
+        /* Keyframes for XIRR Refresh Action */
+        @keyframes spin-custom {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .animate-spin-active { animation: spin-custom 0.6s linear infinite; }
+
+        /* Mobile Sidebar & Bottom Sheet Transitions */
+        #mobile-sidebar-backdrop { transition: opacity 0.3s ease-in-out; }
+        #mobile-sidebar { transition: transform 0.3s ease-in-out; }
+
+        #mobile-bottom-sheet-backdrop { transition: opacity 0.3s ease-in-out; }
+        #mobile-bottom-sheet { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col md:flex-row text-neutralScale-900 font-sf">
+
+    <!-- GLOBAL FIXED TOOLTIP CARD CONTAINER (DESKTOP) -->
+    <div id="global-tooltip" class="fixed hidden z-[9999] pointer-events-none transition-opacity duration-150 opacity-0 bg-neutralScale-900 text-white text-[11px] p-3 rounded-xl shadow-2xl max-w-xs leading-relaxed font-normal">
+        <div id="global-tooltip-content"></div>
+    </div>
+
+    <!-- MOBILE BOTTOM SHEET PANEL CONTAINER -->
+    <div id="mobile-bottom-sheet-backdrop" onclick="closeMobileBottomSheet()" class="fixed inset-0 bg-black/50 z-[100] hidden md:hidden opacity-0"></div>
+    <div id="mobile-bottom-sheet" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-[101] p-5 shadow-2xl transform translate-y-full md:hidden border-t border-neutralScale-200">
+        <div class="w-12 h-1.5 bg-neutralScale-300 rounded-full mx-auto mb-4"></div>
+        <div id="mobile-bottom-sheet-content" class="text-xs text-neutralScale-900 font-normal leading-relaxed space-y-3"></div>
+        <button onclick="closeMobileBottomSheet()" class="w-full mt-5 bg-neutralScale-100 hover:bg-neutralScale-200 text-neutralScale-900 font-bold py-2.5 rounded-xl text-xs transition">
+            Close
+        </button>
+    </div>
+
+    <!-- DOCUMENT PREVIEW MODAL FOR NCD -->
+    <div id="ncd-document-modal" class="fixed inset-0 bg-black/60 z-[120] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-neutralScale-200">
+            <div class="flex justify-between items-center border-b border-neutralScale-100 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="file-text" class="w-5 h-5 text-brand-900"></i>
+                    <h3 id="modal-ncd-title" class="font-bold text-sm text-neutralScale-900">Allotment Certificate Preview</h3>
+                </div>
+                <button onclick="closeNcdDocumentModal()" class="text-neutralScale-500 hover:text-neutralScale-900">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="modal-ncd-body" class="bg-neutralScale-50 p-4 rounded-xl border border-neutralScale-200 text-xs space-y-2 leading-relaxed">
+                <!-- Dynamically populated certificate info -->
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button onclick="closeNcdDocumentModal()" class="px-4 py-2 bg-neutralScale-100 hover:bg-neutralScale-200 text-neutralScale-900 text-xs font-bold rounded-xl transition">
+                    Close
+                </button>
+                <button onclick="alert('Sample Allotment Certificate downloaded successfully.'); closeNcdDocumentModal();" class="px-4 py-2 bg-brand-900 hover:bg-black text-white text-xs font-bold rounded-xl transition flex items-center space-x-1.5">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Download Certificate</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOBILE SIDEBAR BACKDROP -->
+    <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+
+    <!-- ========================================== -->
+    <!-- SIDEBAR (RESPONSIVE FOR MOBILE & DESKTOP)  -->
+    <!-- ========================================== -->
+    <aside id="mobile-sidebar" class="fixed md:relative inset-y-0 left-0 w-64 md:w-60 bg-white border-r border-neutralScale-200 flex flex-col justify-between shrink-0 z-50 -translate-x-full md:translate-x-0 transition-transform duration-300">
+        <div>
+            <!-- Brand Logo & Close Button -->
+            <div class="h-16 flex items-center justify-between px-6 border-b border-neutralScale-100">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-7 h-7 bg-brand-900 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-xs">
+                        %
+                    </div>
+                    <span class="font-bold text-lg text-neutralScale-900 tracking-tight">Per Annum</span>
+                </div>
+                <button onclick="toggleMobileSidebar()" class="md:hidden text-neutralScale-500 hover:text-neutralScale-900">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="p-3 space-y-5">
+                <div>
+                    <p class="text-[10px] font-bold text-neutralScale-500 uppercase tracking-wider mb-2 px-3">GENERAL</p>
+                    <nav class="space-y-1">
+                        <button class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-neutralScale-500 hover:bg-neutralScale-50 text-xs font-medium transition">
+                            <i data-lucide="home" class="w-4 h-4 text-neutralScale-500"></i>
+                            <span>Home</span>
+                        </button>
+                        <button onclick="navigateTo('portfolio'); switchTab('p2p'); toggleMobileSidebar();" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg bg-brand-100/60 text-brand-900 text-xs font-bold transition">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-brand-900"></i>
+                            <span>Portfolio</span>
+                        </button>
+                        <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-neutralScale-500 hover:bg-neutralScale-50 text-xs font-medium transition">
+                            <div class="flex items-center space-x-3">
+                                <i data-lucide="user" class="w-4 h-4 text-neutralScale-500"></i>
+                                <span>Profile</span>
+                            </div>
+                            <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i>
+                        </button>
+                        <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-neutralScale-500 hover:bg-neutralScale-50 text-xs font-medium transition">
+                            <div class="flex items-center space-x-3">
+                                <i data-lucide="gift" class="w-4 h-4 text-neutralScale-500"></i>
+                                <span>Rewards</span>
+                            </div>
+                            <span class="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">NEW</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <div>
+                    <p class="text-[10px] font-bold text-neutralScale-500 uppercase tracking-wider mb-2 px-3">PRODUCTS</p>
+                    <nav class="space-y-1">
+                        <button class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-neutralScale-500 hover:bg-neutralScale-50 text-xs font-medium transition">
+                            <i data-lucide="building" class="w-4 h-4 text-neutralScale-500"></i>
+                            <span>Estates</span>
+                        </button>
+                        <button onclick="navigateTo('portfolio'); switchTab('p2p'); toggleMobileSidebar();" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-neutralScale-500 hover:bg-neutralScale-50 text-xs font-medium transition">
+                            <i data-lucide="percent" class="w-4 h-4 text-neutralScale-500"></i>
+                            <span>P2P Edge</span>
+                        </button>
+                        <button onclick="navigateTo('portfolio'); switchTab('ncd'); toggleMobileSidebar();" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-neutralScale-500 hover:bg-neutralScale-50 text-xs font-medium transition">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-neutralScale-500"></i>
+                            <span>NCDs</span>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ========================================== -->
+    <!-- MAIN WORKSPACE                             -->
+    <!-- ========================================== -->
+    <main class="flex-1 flex flex-col overflow-y-auto hide-scrollbar w-full">
+        
+        <!-- Top Navbar -->
+        <header class="h-16 bg-white border-b border-neutralScale-200 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-10 shadow-xs">
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleMobileSidebar()" class="md:hidden text-neutralScale-900 focus:outline-none">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div id="breadcrumb" class="flex items-center text-xs sm:text-sm text-neutralScale-500 font-medium space-x-1.5 sm:space-x-2 truncate">
+                    <!-- Dynamic Breadcrumb -->
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3 shrink-0">
+                <div class="text-right hidden sm:block">
+                    <p class="text-xs font-bold text-neutralScale-900">Sourav S.</p>
+                    <p class="text-[10px] text-neutralScale-500">sourav.singh@example.com</p>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                    S
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Body Workspace -->
+        <div class="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+
+            <!-- ========================================== -->
+            <!-- SCREEN 1: PORTFOLIO OVERVIEW SCREEN        -->
+            <!-- ========================================== -->
+            <div id="view-portfolio" class="space-y-6">
+                
+                <div>
+                    <h1 class="text-xl font-bold text-neutralScale-900">Portfolio Overview</h1>
+                </div>
+
+                <!-- Tabs Switcher (Connected P2P Edge and NCDs) -->
+                <div class="border-b border-neutralScale-200 flex space-x-8">
+                    <button id="tab-btn-p2p" onclick="switchTab('p2p')" class="pb-2.5 text-sm font-bold text-brand-900 relative">
+                        P2P Edge
+                        <span id="tab-indicator-p2p" class="absolute bottom-0 left-0 w-full h-0.5 bg-brand-900 rounded-t-full"></span>
+                    </button>
+                    <button id="tab-btn-estates" class="pb-2.5 text-sm font-medium text-neutralScale-500 hover:text-neutralScale-900 cursor-not-allowed" title="Estates view is outside this task">Estates</button>
+                    <button id="tab-btn-ncd" onclick="switchTab('ncd')" class="pb-2.5 text-sm font-medium text-neutralScale-500 hover:text-neutralScale-900 relative">
+                        NCDs
+                        <span id="tab-indicator-ncd" class="hidden absolute bottom-0 left-0 w-full h-0.5 bg-brand-900 rounded-t-full"></span>
+                    </button>
+                </div>
+
+                <!-- TAB CONTENT 1: P2P EDGE VIEW -->
+                <div id="content-tab-p2p" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Left Main Area -->
+                    <div class="lg:col-span-2 space-y-6">
+
+                        <!-- P2P Edge Portfolio Overview Card -->
+                        <div class="bg-white rounded-2xl border border-neutralScale-200 shadow-xs overflow-hidden">
+                            
+                            <div class="p-4 sm:p-6 space-y-5">
+                                <!-- Header Section -->
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutralScale-100 pb-4 gap-3">
+                                    <div>
+                                        <h2 class="text-base font-bold text-neutralScale-900">P2P Edge Portfolio Overview</h2>
+                                        <p class="text-xs text-neutralScale-500 mt-0.5">Aggregated performance across active P2P contracts</p>
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                                        <!-- Single-Line XIRR Badge -->
+                                        <div class="bg-brand-100/70 border border-brand-100 px-3 py-1 rounded-full flex items-center space-x-1.5 whitespace-nowrap">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-brand-600"></span>
+                                            <span id="overview-xirr-text" class="text-xs font-bold text-brand-900">Avg. XIRR 12.4%</span>
+                                            <i data-lucide="info" class="w-3.5 h-3.5 text-brand-900 cursor-pointer" 
+                                               onclick="handleInfoTrigger(this, 'Your average yearly return percentage across all your P2P Edge investments, taking exact dates into account.')"
+                                               onmouseenter="handleInfoTrigger(this, 'Your average yearly return percentage across all your P2P Edge investments, taking exact dates into account.')" 
+                                               onmouseleave="hideGlobalTooltip()"></i>
+                                            <button onclick="refreshXIRRAction(this, 'overview')" title="Refresh XIRR" class="text-brand-900 hover:text-black transition ml-0.5 focus:outline-none">
+                                                <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                        </div>
+                                        <!-- Header Nav CTA -->
+                                        <button onclick="navigateTo('plans_list')" class="w-full sm:w-auto justify-center bg-brand-900 hover:bg-black text-white text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-2xs">
+                                            <span>View Plans Breakdown</span>
+                                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Core Metric Grid -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    
+                                    <!-- Current Value -->
+                                    <div class="bg-neutralScale-200/50 p-4 rounded-xl border border-neutralScale-200/80">
+                                        <span class="text-xs text-neutralScale-500 font-medium flex items-center mb-1">
+                                            Current Value
+                                            <i data-lucide="info" class="w-3.5 h-3.5 text-neutralScale-500 ml-1 cursor-pointer" 
+                                               onclick="handleInfoTrigger(this, 'The exact amount of your money currently working in active loans.')"
+                                               onmouseenter="handleInfoTrigger(this, 'The exact amount of your money currently working in active loans.')" 
+                                               onmouseleave="hideGlobalTooltip()"></i>
+                                        </span>
+                                        <p class="text-2xl font-bold text-neutralScale-900">₹2,10,000</p>
+                                    </div>
+
+                                    <!-- Total Initial Amount -->
+                                    <div class="bg-neutralScale-200/50 p-4 rounded-xl border border-neutralScale-200/80">
+                                        <span class="text-xs text-neutralScale-500 font-medium flex items-center mb-1">
+                                            Total Initial Amount
+                                            <i data-lucide="info" class="w-3.5 h-3.5 text-neutralScale-500 ml-1 cursor-pointer" 
+                                               onclick="handleInfoTrigger(this, 'Total amount initially deposited across all lock-ins across all P2P Edge plans.')"
+                                               onmouseenter="handleInfoTrigger(this, 'Total amount initially deposited across all lock-ins across all P2P Edge plans.')" 
+                                               onmouseleave="hideGlobalTooltip()"></i>
+                                        </span>
+                                        <p class="text-2xl font-bold text-neutralScale-900">₹5,00,000</p>
+                                    </div>
+
+                                    <!-- Net Returns -->
+                                    <div class="bg-neutralScale-200/50 p-4 rounded-xl border border-neutralScale-200/80">
+                                        <span class="text-xs text-neutralScale-500 font-medium flex items-center mb-1">
+                                            Net Returns
+                                            <i data-lucide="info" class="w-3.5 h-3.5 text-brand-600 ml-1 cursor-pointer" 
+                                               onclick="handleInfoTrigger(this, getNetReturnsTooltipHTML('+₹48,250', '₹4,90,000', '₹3,38,250', '₹2,10,000'))"
+                                               onmouseenter="handleInfoTrigger(this, getNetReturnsTooltipHTML('+₹48,250', '₹4,90,000', '₹3,38,250', '₹2,10,000'))" 
+                                               onmouseleave="hideGlobalTooltip()"></i>
+                                        </span>
+                                        <p class="text-2xl font-bold text-brand-600">+₹48,250</p>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- WALLET STRIP -->
+                            <div class="bg-brand-100/50 border-t border-brand-100 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                <div class="flex items-center space-x-2 text-xs text-neutralScale-900">
+                                    <i data-lucide="wallet" class="w-4 h-4 text-brand-900 shrink-0"></i>
+                                    <span class="font-medium text-neutralScale-500">Wallet balance:</span>
+                                    <span class="font-bold text-neutralScale-900 text-sm">₹1,43,500</span>
+                                </div>
+                                <button onclick="navigateTo('plans_list')" class="w-full sm:w-auto justify-center bg-brand-900 hover:bg-black text-white text-xs font-bold px-4 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-2xs">
+                                    <span>Deploy Now</span>
+                                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+
+                        </div>
+
+                        <!-- P2P Distribution Analytics Section -->
+                        <div class="bg-white rounded-2xl border border-neutralScale-200 p-4 sm:p-5 shadow-xs space-y-4">
+                            <p class="text-[11px] font-bold text-neutralScale-500 uppercase tracking-wider">P2P AMOUNT DISTRIBUTION (BY CURRENT VALUE)</p>
+                            
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-bold text-neutralScale-900 gap-1">
+                                <span>Active Current Value: ₹2,10,000</span>
+                                <span class="text-brand-900 font-semibold">4 Invested Plans</span>
+                            </div>
+                            
+                            <!-- Visual Progress Bar -->
+                            <div class="w-full h-3.5 bg-neutralScale-200 rounded-full overflow-hidden flex">
+                                <div class="h-full bg-brand-900" style="width: 42.8%;" title="Growth Pro 2 Months (42.8%)"></div>
+                                <div class="h-full bg-brand-700" style="width: 23.8%;" title="Growth X (23.8%)"></div>
+                                <div class="h-full bg-brand-600" style="width: 19.0%;" title="Growth Pro 6 Months (19.0%)"></div>
+                                <div class="h-full bg-brand-500" style="width: 14.4%;" title="Growth Plus (14.4%)"></div>
+                            </div>
+
+                            <!-- Legend -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px] font-medium text-neutralScale-500 pt-1">
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-brand-900 shrink-0"></span>
+                                    <span class="truncate">Growth Pro 2 Months</span>
+                                </div>
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-brand-700 shrink-0"></span>
+                                    <span class="truncate">Growth X</span>
+                                </div>
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-brand-600 shrink-0"></span>
+                                    <span class="truncate">Growth Pro 6 Months</span>
+                                </div>
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-brand-500 shrink-0"></span>
+                                    <span class="truncate">Growth Plus</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column Sidebar Container (Shared) -->
+                    <div id="shared-sidebar-container" class="space-y-6">
+                        
+                        <!-- User's Portfolio Card -->
+                        <div class="bg-brand-900 text-white rounded-2xl p-5 sm:p-6 shadow-md relative overflow-hidden space-y-4">
+                            <div class="flex justify-between items-start border-b border-brand-700/50 pb-3">
+                                <div>
+                                    <h3 class="font-bold text-base text-white">Sourav's Portfolio</h3>
+                                    <p class="text-[11px] text-brand-100/80 mt-0.5">Last updated 16 Oct '26, 02:45 PM</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <!-- COLLAPSIBLE CURRENT VALUE CARD -->
+                                <div class="bg-brand-800/60 rounded-xl border border-brand-700/60 overflow-hidden transition-all">
+                                    <button onclick="togglePortfolioCurrentValue()" class="w-full p-3.5 flex items-center justify-between text-left hover:bg-brand-800/90 transition focus:outline-none">
+                                        <div>
+                                            <p class="text-xs text-brand-100/70">Current Value</p>
+                                            <p id="portfolio-current-val-total" class="text-xl font-bold text-white mt-0.5">₹20,06,500</p>
+                                        </div>
+                                        <i id="current-val-chevron" data-lucide="chevron-down" class="w-4 h-4 text-brand-100 transition-transform duration-200"></i>
+                                    </button>
+                                    
+                                    <!-- Collapsible Table for Current Value -->
+                                    <div id="current-val-collapse-content" class="hidden px-3.5 pb-3.5 pt-1 border-t border-brand-700/40 text-xs">
+                                        <div class="flex justify-between items-center text-[10px] uppercase font-bold text-brand-100/70 pb-1.5 border-b border-brand-700/30 mb-2">
+                                            <span>PRODUCT</span>
+                                            <span>CURRENT VALUE</span>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between items-center text-white">
+                                                <span class="flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-brand-500 mr-2"></span>P2P Edge</span>
+                                                <span class="font-bold">₹2,10,000</span>
+                                            </div>
+                                            <div class="flex justify-between items-center text-white">
+                                                <span class="flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-brand-100 mr-2"></span>Estates</span>
+                                                <span class="font-bold">₹2,96,500</span>
+                                            </div>
+                                            <div class="flex justify-between items-center text-white">
+                                                <span class="flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-2"></span>NCDs</span>
+                                                <span class="font-bold">₹15,00,000</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- COLLAPSIBLE LIFETIME EARNINGS CARD -->
+                                <div class="bg-gradient-to-r from-brand-700 to-brand-600 rounded-xl border border-brand-500/40 shadow-inner overflow-hidden transition-all">
+                                    <button onclick="togglePortfolioLifetimeEarnings()" class="w-full p-3.5 flex items-center justify-between text-left hover:opacity-95 transition focus:outline-none">
+                                        <div>
+                                            <div class="flex items-center">
+                                                <span class="text-xs font-extrabold text-white tracking-wide">Lifetime Earnings</span>
+                                                <i data-lucide="info" class="w-3.5 h-3.5 text-brand-100 ml-1.5 cursor-pointer" 
+                                                   onclick="event.stopPropagation(); handleInfoTrigger(this, 'Total net earnings from your Per Annum investments across all products.')"
+                                                   onmouseenter="handleInfoTrigger(this, 'Total net earnings from your Per Annum investments across all products.')" 
+                                                   onmouseleave="hideGlobalTooltip()"></i>
+                                            </div>
+                                            <p id="portfolio-lifetime-earnings-total" class="text-2xl font-black text-white mt-0.5">₹21,48,272.40</p>
+                                            <p class="text-[10px] text-brand-100/90 mt-0.5">Total net earnings from your Per Annum investments across products.</p>
+                                        </div>
+                                        <i id="lifetime-earnings-chevron" data-lucide="chevron-down" class="w-4 h-4 text-white transition-transform duration-200 shrink-0 ml-2"></i>
+                                    </button>
+                                    
+                                    <!-- Collapsible Breakdown Table -->
+                                    <div id="lifetime-earnings-collapse-content" class="hidden px-3.5 pb-3.5 pt-1 border-t border-brand-500/30 text-xs">
+                                        <div class="flex justify-between items-center text-[10px] uppercase font-bold text-brand-100/80 pb-1.5 border-b border-brand-500/30 mb-2">
+                                            <span>SOURCE</span>
+                                            <span>EARNINGS</span>
+                                        </div>
+                                        <div id="lifetime-earnings-breakdown-list" class="space-y-2 text-white">
+                                            <!-- Dynamically populated rows -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- TAB CONTENT 2: NCD PORTFOLIO CARD OVERVIEW SCREEN -->
+                <div id="content-tab-ncd" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Left Main NCD Card Overview Area -->
+                    <div class="lg:col-span-2 space-y-6">
+
+                        <!-- Aggregated Portfolio Summary Banner -->
+                        <div class="bg-white rounded-2xl border border-neutralScale-200 p-4 sm:p-6 shadow-xs space-y-4">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutralScale-100 pb-3 gap-2">
+                                <div>
+                                    <h2 class="text-base font-bold text-neutralScale-900">NCD Investment Summary</h2>
+                                    <p class="text-xs text-neutralScale-500 mt-0.5">High-yield corporate bond holdings</p>
+                                </div>
+                                <div class="flex items-center space-x-1.5 bg-neutralScale-100 p-1 rounded-xl border border-neutralScale-200 text-xs font-semibold self-start sm:self-auto">
+                                    <button id="ncd-state-filter-all" onclick="switchNcdStateFilter('all')" class="px-3 py-1 rounded-lg bg-white text-brand-900 shadow-2xs transition">All (3)</button>
+                                    <button id="ncd-state-filter-active" onclick="switchNcdStateFilter('active')" class="px-3 py-1 rounded-lg text-neutralScale-500 hover:text-neutralScale-900 transition">Active (2)</button>
+                                    <button id="ncd-state-filter-closed" onclick="switchNcdStateFilter('closed')" class="px-3 py-1 rounded-lg text-neutralScale-500 hover:text-neutralScale-900 transition">Closed (1)</button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <div class="bg-neutralScale-50 p-3 rounded-xl border border-neutralScale-200">
+                                    <span class="text-[10px] text-neutralScale-500 font-semibold block">Total Active Capital</span>
+                                    <strong class="text-lg font-bold text-neutralScale-900">₹15,00,000</strong>
+                                </div>
+                                <div class="bg-neutralScale-50 p-3 rounded-xl border border-neutralScale-200">
+                                    <span class="text-[10px] text-neutralScale-500 font-semibold block">Gross Interest Earned</span>
+                                    <strong class="text-lg font-bold text-neutralScale-900">₹1,47,136</strong>
+                                </div>
+                                <div class="bg-neutralScale-50 p-3 rounded-xl border border-neutralScale-200">
+                                    <span class="text-[10px] text-neutralScale-500 font-semibold block">Net Received (Post-TDS)</span>
+                                    <strong class="text-lg font-bold text-brand-600">₹1,32,422.40</strong>
+                                </div>
+                                <div class="bg-neutralScale-50 p-3 rounded-xl border border-neutralScale-200">
+                                    <span class="text-[10px] text-neutralScale-500 font-semibold block">Weighted Avg. XIRR</span>
+                                    <strong class="text-lg font-bold text-brand-600">11.78% p.a.</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Invested NCD Cards List -->
+                        <div class="space-y-4">
+                            <h3 class="text-xs font-bold text-neutralScale-500 uppercase tracking-wider">YOUR HOLDINGS</h3>
+
+                            <!-- NCD 1 Card: Cashtree NCD Series A (ACTIVE) -->
+                            <div id="ncd-card-cashtree" class="ncd-holding-card bg-white rounded-2xl border border-neutralScale-200 p-5 shadow-xs space-y-4 clickable-card" data-status="active">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutralScale-100 pb-3 gap-2">
+                                    <div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="bg-neutralScale-100 text-neutralScale-700 text-[10px] font-bold px-2 py-0.5 rounded">INE000A01000</span>
+                                            <!-- STATUS BADGE: ACTIVE -->
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1"></span>
+                                                Active
+                                            </span>
+                                        </div>
+                                        <h4 class="text-base font-bold text-neutralScale-900 mt-1">Cashtree NCD Series A</h4>
+                                        <p class="text-xs text-neutralScale-500">Issuer: Cashtree</p>
+                                    </div>
+                                    <div class="text-left sm:text-right">
+                                        <span class="text-[10px] text-neutralScale-500 block">Amount Invested</span>
+                                        <strong class="text-lg font-bold text-neutralScale-900">₹10,00,000</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Core Metrics Grid -->
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4 text-xs">
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Date of Funds Receipt</span>
+                                        <strong class="text-neutralScale-900 font-semibold">10 Feb 2026</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Face Value per NCD</span>
+                                        <strong class="text-neutralScale-900 font-semibold">₹1,000</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Units Allotted</span>
+                                        <strong class="text-neutralScale-900 font-semibold">1,000 Units</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Date of Allotment</span>
+                                        <strong class="text-neutralScale-900 font-semibold">10 Feb 2026</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Tenure</span>
+                                        <strong class="text-neutralScale-900 font-semibold">18 Months</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Payout Type</span>
+                                        <strong class="text-neutralScale-900 font-semibold">Monthly</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Coupon Rate</span>
+                                        <strong class="text-neutralScale-900 font-bold">11.39% p.a.</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">XIRR (Pre-Tax)</span>
+                                        <strong class="text-brand-600 font-bold">11.99% p.a.</strong>
+                                    </div>
+                                </div>
+
+                                <div class="pt-3 border-t border-neutralScale-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                    <span class="text-xs text-neutralScale-500 font-medium">Maturity Date: <strong class="text-neutralScale-900 font-bold">10 Aug 2027</strong></span>
+                                    <button onclick="navigateToNcdDetailView('cashtree')" class="w-full sm:w-auto bg-brand-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center justify-center space-x-1.5 shadow-2xs">
+                                        <span>View Complete Details & Schedule</span>
+                                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- NCD 2 Card: InCred Finance NCD Series B (ACTIVE) -->
+                            <div id="ncd-card-incred" class="ncd-holding-card bg-white rounded-2xl border border-neutralScale-200 p-5 shadow-xs space-y-4 clickable-card" data-status="active">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutralScale-100 pb-3 gap-2">
+                                    <div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="bg-neutralScale-100 text-neutralScale-700 text-[10px] font-bold px-2 py-0.5 rounded">INE000B02000</span>
+                                            <!-- STATUS BADGE: ACTIVE -->
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1"></span>
+                                                Active
+                                            </span>
+                                        </div>
+                                        <h4 class="text-base font-bold text-neutralScale-900 mt-1">InCred Finance NCD Series B</h4>
+                                        <p class="text-xs text-neutralScale-500">Issuer: InCred Financial Services</p>
+                                    </div>
+                                    <div class="text-left sm:text-right">
+                                        <span class="text-[10px] text-neutralScale-500 block">Amount Invested</span>
+                                        <strong class="text-lg font-bold text-neutralScale-900">₹5,00,000</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Core Metrics Grid -->
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4 text-xs">
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Date of Funds Receipt</span>
+                                        <strong class="text-neutralScale-900 font-semibold">15 Feb 2026</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Face Value per NCD</span>
+                                        <strong class="text-neutralScale-900 font-semibold">₹1,000</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Units Allotted</span>
+                                        <strong class="text-neutralScale-900 font-semibold">500 Units</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Date of Allotment</span>
+                                        <strong class="text-neutralScale-900 font-semibold">15 Feb 2026</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Tenure</span>
+                                        <strong class="text-neutralScale-900 font-semibold">24 Months</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Payout Type</span>
+                                        <strong class="text-neutralScale-900 font-semibold">Monthly</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Coupon Rate</span>
+                                        <strong class="text-neutralScale-900 font-bold">10.80% p.a.</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">XIRR (Pre-Tax)</span>
+                                        <strong class="text-brand-600 font-bold">11.35% p.a.</strong>
+                                    </div>
+                                </div>
+
+                                <div class="pt-3 border-t border-neutralScale-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                    <span class="text-xs text-neutralScale-500 font-medium">Maturity Date: <strong class="text-neutralScale-900 font-bold">15 Feb 2028</strong></span>
+                                    <button onclick="navigateToNcdDetailView('incred')" class="w-full sm:w-auto bg-brand-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center justify-center space-x-1.5 shadow-2xs">
+                                        <span>View Complete Details & Schedule</span>
+                                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- NCD 3 Card: Northern Arc Capital NCD Series C (CLOSED) -->
+                            <div id="ncd-card-northern" class="ncd-holding-card bg-neutralScale-50/80 rounded-2xl border border-neutralScale-200 p-5 shadow-xs space-y-4 clickable-card" data-status="closed">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutralScale-200/80 pb-3 gap-2">
+                                    <div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="bg-neutralScale-200 text-neutralScale-700 text-[10px] font-bold px-2 py-0.5 rounded">INE000C03000</span>
+                                            <!-- STATUS BADGE: CLOSED -->
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutralScale-200 text-neutralScale-700 border border-neutralScale-300">
+                                                <i data-lucide="check-circle-2" class="w-3 h-3 text-neutralScale-600 mr-1"></i>
+                                                Closed (Matured)
+                                            </span>
+                                        </div>
+                                        <h4 class="text-base font-bold text-neutralScale-900 mt-1">Northern Arc Capital NCD Series C</h4>
+                                        <p class="text-xs text-neutralScale-500">Issuer: Northern Arc Capital Limited</p>
+                                    </div>
+                                    <div class="text-left sm:text-right">
+                                        <span class="text-[10px] text-neutralScale-500 block">Original Investment</span>
+                                        <strong class="text-lg font-bold text-neutralScale-700">₹3,00,000</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Core Metrics Grid -->
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4 text-xs">
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Date of Funds Receipt</span>
+                                        <strong class="text-neutralScale-900 font-semibold">10 Jan 2025</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Face Value per NCD</span>
+                                        <strong class="text-neutralScale-900 font-semibold">₹1,000</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Units Allotted</span>
+                                        <strong class="text-neutralScale-900 font-semibold">300 Units</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Date of Allotment</span>
+                                        <strong class="text-neutralScale-900 font-semibold">10 Jan 2025</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Tenure</span>
+                                        <strong class="text-neutralScale-900 font-semibold">12 Months</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Payout Type</span>
+                                        <strong class="text-neutralScale-900 font-semibold">Monthly</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Coupon Rate</span>
+                                        <strong class="text-neutralScale-900 font-bold">12.00% p.a.</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-neutralScale-500 text-[10px] block">Total Realised Returns</span>
+                                        <strong class="text-brand-600 font-bold">₹32,400.00 (Net)</strong>
+                                    </div>
+                                </div>
+
+                                <div class="pt-3 border-t border-neutralScale-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                    <span class="text-xs text-neutralScale-500 font-medium">Full Maturity Settled On: <strong class="text-neutralScale-900 font-bold">10 Jan 2026</strong></span>
+                                    <button onclick="navigateToNcdDetailView('northern')" class="w-full sm:w-auto bg-neutralScale-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center justify-center space-x-1.5 shadow-2xs">
+                                        <span>View Realised Schedule & Settlement</span>
+                                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column Sidebar Container for NCD View -->
+                    <div id="ncd-sidebar-target"></div>
+                </div>
+
+            </div>
+
+            <!-- ========================================== -->
+            <!-- SCREEN 2: UNIFIED NCD DETAIL VIEW SCREEN   -->
+            <!-- ========================================== -->
+            <div id="view-ncd-detail" class="space-y-6 hidden">
+                <button onclick="switchTab('ncd')" class="inline-flex items-center text-xs font-bold text-neutralScale-500 hover:text-brand-900 transition">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5 mr-1"></i> Back to NCD Portfolio Overview
+                </button>
+
+                <!-- Header Title Bar -->
+                <div class="bg-white p-5 rounded-2xl border border-neutralScale-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h1 id="ncd-detail-title" class="text-xl font-bold text-neutralScale-900">Cashtree NCD Series A</h1>
+                            <span id="ncd-detail-status-pill" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                Active
+                            </span>
+                        </div>
+                        <p id="ncd-detail-subtitle" class="text-xs text-neutralScale-500 mt-0.5">Issuer: Cashtree | Holder: Sourav Singh</p>
+                    </div>
+                    <button onclick="openNcdDocumentModal()" class="bg-neutralScale-100 hover:bg-neutralScale-200 text-neutralScale-900 border border-neutralScale-200 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5 self-start sm:self-auto">
+                        <i data-lucide="file-text" class="w-4 h-4 text-brand-900"></i>
+                        <span>View Certificate</span>
+                    </button>
+                </div>
+
+                <!-- SECTION 1: COMPLETE INVESTMENT DETAILS -->
+                <div class="bg-white rounded-2xl border border-neutralScale-200 p-5 sm:p-6 shadow-xs space-y-4">
+                    <div class="border-b border-neutralScale-100 pb-3">
+                        <h3 class="text-xs font-bold text-neutralScale-900 uppercase tracking-wider">Complete Investment Details</h3>
+                    </div>
+
+                    <div id="ncd-detail-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-6 text-xs">
+                        <!-- Dynamic details populated by JS -->
+                    </div>
+                </div>
+
+                <!-- SECTION 2: COMPLETE PAYOUT SCHEDULE -->
+                <div class="bg-white rounded-2xl border border-neutralScale-200 p-4 sm:p-6 shadow-xs space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutralScale-100 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="calendar" class="w-4 h-4 text-brand-900"></i>
+                            <h3 id="ncd-schedule-section-heading" class="text-xs font-bold text-neutralScale-900 uppercase tracking-wider">Complete Payout Schedule</h3>
+                        </div>
+
+                        <!-- Filter Tabs -->
+                        <div class="flex items-center space-x-1 bg-neutralScale-100 p-1 rounded-xl border border-neutralScale-200 text-xs font-semibold">
+                            <button id="payout-filter-all" onclick="filterNcdPayouts('all')" class="px-3 py-1 rounded-lg bg-white text-brand-900 shadow-2xs transition">All</button>
+                            <button id="payout-filter-paid" onclick="filterNcdPayouts('paid')" class="px-3 py-1 rounded-lg text-neutralScale-500 hover:text-neutralScale-900 transition">Paid</button>
+                            <button id="payout-filter-upcoming" onclick="filterNcdPayouts('upcoming')" class="px-3 py-1 rounded-lg text-neutralScale-500 hover:text-neutralScale-900 transition">Upcoming</button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Metrics Strip -->
+                    <div id="ncd-payout-summary-strip" class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-brand-100/30 p-3 rounded-xl border border-brand-100 text-xs">
+                        <!-- Dynamic summary totals -->
+                    </div>
+
+                    <!-- DESKTOP PAYOUT TABLE -->
+                    <div class="hidden md:block max-h-[480px] overflow-y-auto custom-scrollbar border border-neutralScale-200 rounded-xl">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="sticky top-0 z-10 bg-neutralScale-100 shadow-2xs">
+                                <tr class="border-b border-neutralScale-200 text-[10px] uppercase font-bold text-neutralScale-500 tracking-wider">
+                                    <th class="py-3 px-3">#</th>
+                                    <th class="py-3 px-3">PAYOUT DATE</th>
+                                    <th class="py-3 px-3 text-right">GROSS AMT</th>
+                                    <th class="py-3 px-3 text-right">INTEREST</th>
+                                    <th class="py-3 px-3 text-right">PRINCIPAL</th>
+                                    <th class="py-3 px-3 text-right">TDS (10%)</th>
+                                    <th class="py-3 px-3 text-right">PAID AMOUNT</th>
+                                    <th class="py-3 px-3 text-center">STATUS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ncd-payout-desktop-tbody" class="divide-y divide-neutralScale-100 text-xs">
+                                <!-- Desktop rows -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- MOBILE PAYOUT TABLE -->
+                    <div class="block md:hidden border border-neutralScale-200 rounded-xl overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-neutralScale-100 border-b border-neutralScale-200 text-[10px] uppercase font-bold text-neutralScale-500">
+                                <tr>
+                                    <th class="py-3 px-3">PAYOUT DATE</th>
+                                    <th class="py-3 px-3 text-right">PAID AMOUNT</th>
+                                    <th class="py-3 px-3 text-center">STATUS</th>
+                                    <th class="py-3 px-2 text-center">INFO</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ncd-payout-mobile-tbody" class="divide-y divide-neutralScale-100 text-xs font-medium">
+                                <!-- Mobile compact rows -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- P2P EDGE DETAILS VIEWS                     -->
+            <!-- ========================================== -->
+            <div id="view-plans-list" class="space-y-6 hidden">
+                <button onclick="navigateTo('portfolio')" class="inline-flex items-center text-xs font-bold text-neutralScale-500 hover:text-brand-900 transition">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5 mr-1"></i> Back to Portfolio Overview
+                </button>
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-xl font-bold text-neutralScale-900">Your Invested Plans</h1>
+                        <p class="text-xs text-neutralScale-500 mt-0.5">High level summary of active plans</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    
+                    <!-- Plan 1: Growth Pro 2 Months -->
+                    <div class="bg-white border border-neutralScale-200 rounded-2xl p-5 shadow-xs clickable-card flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-neutralScale-900 text-base">Growth Pro 2 Months</h3>
+                                    <p class="text-[11px] text-neutralScale-500">Short term compounding strategy</p>
+                                </div>
+                                <div class="bg-brand-100/70 text-brand-900 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-brand-100 flex items-center space-x-1 whitespace-nowrap">
+                                    <span id="xirr-val-Growth Pro 2 Months">Avg. XIRR 12.8%</span>
+                                    <button onclick="refreshXIRRAction(this, 'Growth Pro 2 Months')" title="Refresh XIRR" class="hover:text-black transition focus:outline-none">
+                                        <i data-lucide="rotate-cw" class="w-2.5 h-2.5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-2 border-t border-neutralScale-100 pt-3 text-xs">
+                                <div class="flex justify-between"><span class="text-neutralScale-500">Current Value:</span><span class="font-bold text-neutralScale-900">₹90,000</span></div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-neutralScale-500 flex items-center">
+                                        Total Initial Amount:
+                                        <i data-lucide="info" class="w-3 h-3 text-neutralScale-500 ml-1 cursor-pointer" 
+                                           onclick="handleInfoTrigger(this, 'Total amount initially deposited across all lock-ins for Growth Pro 2 Months.')"
+                                           onmouseenter="handleInfoTrigger(this, 'Total amount initially deposited across all lock-ins for Growth Pro 2 Months.')" 
+                                           onmouseleave="hideGlobalTooltip()"></i>
+                                    </span>
+                                    <span class="font-semibold text-neutralScale-900">₹2,00,000</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-neutralScale-500 flex items-center">
+                                        Net Returns:
+                                        <i data-lucide="info" class="w-3 h-3 text-brand-600 ml-1 cursor-pointer" 
+                                           onclick="handleInfoTrigger(this, getNetReturnsTooltipHTML('+₹21,500', '₹1,96,000', '₹1,31,500', '₹90,000'))"
+                                           onmouseenter="handleInfoTrigger(this, getNetReturnsTooltipHTML('+₹21,500', '₹1,96,000', '₹1,31,500', '₹90,000'))" 
+                                           onmouseleave="hideGlobalTooltip()"></i>
+                                    </span>
+                                    <span class="font-bold text-brand-600">+₹21,500</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-neutralScale-100 flex items-center space-x-2">
+                            <button onclick="addFundsAction('Growth Pro 2 Months')" class="w-1/2 bg-brand-100/60 hover:bg-brand-100 text-brand-900 border border-brand-100 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                                <span>Add More Funds</span>
+                            </button>
+                            <button onclick="navigateTo('plan_detail', 'Growth Pro 2 Months')" class="w-1/2 bg-brand-900 hover:bg-black text-white text-xs font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                                <span>View Details</span>
+                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Plan 2: Growth X -->
+                    <div class="bg-white border border-neutralScale-200 rounded-2xl p-5 shadow-xs clickable-card flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-neutralScale-900 text-base">Growth X</h3>
+                                    <p class="text-[11px] text-neutralScale-500">Accelerated return strategy</p>
+                                </div>
+                                <div class="bg-brand-100/70 text-brand-900 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-brand-100 flex items-center space-x-1 whitespace-nowrap">
+                                    <span id="xirr-val-Growth X">Avg. XIRR 12.2%</span>
+                                    <button onclick="refreshXIRRAction(this, 'Growth X')" title="Refresh XIRR" class="hover:text-black transition focus:outline-none">
+                                        <i data-lucide="rotate-cw" class="w-2.5 h-2.5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-2 border-t border-neutralScale-100 pt-3 text-xs">
+                                <div class="flex justify-between"><span class="text-neutralScale-500">Current Value:</span><span class="font-bold text-neutralScale-900">₹50,000</span></div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-neutralScale-500 flex items-center">
+                                        Total Initial Amount:
+                                        <i data-lucide="info" class="w-3 h-3 text-neutralScale-500 ml-1 cursor-pointer" 
+                                           onclick="handleInfoTrigger(this, 'Total amount initially deposited across all lock-ins for Growth X.')"
+                                           onmouseenter="handleInfoTrigger(this, 'Total amount initially deposited across all lock-ins for Growth X.')" 
+                                           onmouseleave="hideGlobalTooltip()"></i>
+                                    </span>
+                                    <span class="font-semibold text-neutralScale-900">₹1,20,000</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-neutralScale-500 flex items-center">
+                                        Net Returns:
+                                        <i data-lucide="info" class="w-3 h-3 text-brand-600 ml-1 cursor-pointer" 
+                                           onclick="handleInfoTrigger(this, getNetReturnsTooltipHTML('+₹12,400', '₹1,17,600', '₹82,400', '₹50,000'))"
+                                           onmouseenter="handleInfoTrigger(this, getNetReturnsTooltipHTML('+₹12,400', '₹1,17,600', '₹82,400', '₹50,000'))" 
+                                           onmouseleave="hideGlobalTooltip()"></i>
+                                    </span>
+                                    <span class="font-bold text-brand-600">+₹12,400</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-neutralScale-100 flex items-center space-x-2">
+                            <button onclick="addFundsAction('Growth X')" class="w-1/2 bg-brand-100/60 hover:bg-brand-100 text-brand-900 border border-brand-100 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                                <span>Add More Funds</span>
+                            </button>
+                            <button onclick="navigateTo('plan_detail', 'Growth X')" class="w-1/2 bg-brand-900 hover:bg-black text-white text-xs font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                                <span>View Details</span>
+                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Plan 3: Growth Pro 6 Months -->
+                    <div class="bg-white border border-neutralScale-200 rounded-2xl p-5 shadow-xs clickable-card flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-neutralScale-900 text-base">Growth Pro 6 Months</h3>
+                                    <p class="text-[11px] text-neutralScale-500">Medium term yield plan</p>
+                                </div>
+                                <div class="bg-brand-100/70 text-brand-900 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-brand-100 flex items-center space-x-1 whitespace-nowrap">
+                                    <span id="xirr-val-Growth Pro 6 Months">Avg. XIRR 13.1%</span>
+                                    <button onclick="refreshXIRRAction(this, 'Growth Pro 6 Months')" title="Refresh XIRR" class="hover:text-black transition focus:outline-none">
+                                        <i data-lucide="rotate-cw" class="w-2.5 h-2.5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-2 border-t border-neutralScale-100 pt-3 text-xs">
+                                <div class="flex justify-between"><span class="text-neutralScale-500">Current Value:</span><span class="font-bold text-neutralScale-900">₹40,000</span></div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-neutralScale-500 flex items-center">
+                                        Total Initial Amount:
+                                        <i data-lucide="info" class="w-3 h-3 text-neutralScale-500 ml-1 cursor-pointer" 
+                                           onclick="handleInfoTrigger(this, 'Total amount initially deposited across all lock-ins for Growth Pro 6 Months.')"
+                                           onmouseenter="handleInfoTrigger(this, 'Total amount initially deposited across all lock-ins for Growth Pro 6 Months.')" 
+                                           onmouseleave="hideGlobalTooltip()"></i>
+                                    </span>
+                                    <span class="font-semibold text-neutralScale-900">₹1,00,000</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-neutralScale-500 flex items-center">
+                                        Net Returns:
+                                        <i data-lucide="info" class="w-3 h-3 text-brand-600 ml-1 cursor-pointer" 
+                                           onclick="handleInfoTrigger(this, getNetReturnsTooltipHTML('+₹10,850', '₹98,000', '₹70,850', '₹40,000'))"
+                                           onmouseenter="handleInfoTrigger(this, getNetReturnsTooltipHTML('+₹10,850', '₹98,000', '₹70,850', '₹40,000'))" 
+                                           onmouseleave="hideGlobalTooltip()"></i>
+                                    </span>
+                                    <span class="font-bold text-brand-600">+₹10,850</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-neutralScale-100 flex items-center space-x-2">
+                            <button onclick="addFundsAction('Growth Pro 6 Months')" class="w-1/2 bg-brand-100/60 hover:bg-brand-100 text-brand-900 border border-brand-100 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                                <span>Add More Funds</span>
+                            </button>
+                            <button onclick="navigateTo('plan_detail', 'Growth Pro 6 Months')" class="w-1/2 bg-brand-900 hover:bg-black text-white text-xs font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                                <span>View Details</span>
+                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Plan 4: Growth Plus -->
+                    <div class="bg-white border border-neutralScale-200 rounded-2xl p-5 shadow-xs clickable-card flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-neutralScale-900 text-base">Growth Plus</h3>
+                                    <p class="text-[11px] text-neutralScale-500">Flexible lock-in compounding</p>
+                                </div>
+                                <div class="bg-brand-100/70 text-brand-900 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-brand-100 flex items-center space-x-1 whitespace-nowrap">
+                                    <span id="xirr-val-Growth Plus">Avg. XIRR 11.2%</span>
+                                    <button onclick="refreshXIRRAction(this, 'Growth Plus')" title="Refresh XIRR" class="hover:text-black transition focus:outline-none">
+                                        <i data-lucide="rotate-cw" class="w-2.5 h-2.5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-2 border-t border-neutralScale-100 pt-3 text-xs">
+                                <div class="flex justify-between"><span class="text-neutralScale-500">Current Value:</span><span class="font-bold text-neutralScale-900">₹30,000</span></div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-neutralScale-500 flex items-center">
+                                        Total Initial Amount:
+                                        <i data-lucide="info" class="w-3 h-3 text-neutralScale-500 ml-1 cursor-pointer" 
+                                           onclick="handleInfoTrigger(this, 'Total amount initially deposited across all lock-ins for Growth Plus.')"
+                                           onmouseenter="handleInfoTrigger(this, 'Total amount initially deposited across all lock-ins for Growth Plus.')" 
+                                           onmouseleave="hideGlobalTooltip()"></i>
+                                    </span>
+                                    <span class="font-semibold text-neutralScale-900">₹80,000</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-neutralScale-500 flex items-center">
+                                        Net Returns:
+                                        <i data-lucide="info" class="w-3 h-3 text-brand-600 ml-1 cursor-pointer" 
+                                           onclick="handleInfoTrigger(this, getNetReturnsTooltipHTML('+₹3,500', '₹78,400', '₹53,500', '₹30,000'))"
+                                           onmouseenter="handleInfoTrigger(this, getNetReturnsTooltipHTML('+₹3,500', '₹78,400', '₹53,500', '₹30,000'))" 
+                                           onmouseleave="hideGlobalTooltip()"></i>
+                                    </span>
+                                    <span class="font-bold text-brand-600">+₹3,500</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-neutralScale-100 flex items-center space-x-2">
+                            <button onclick="addFundsAction('Growth Plus')" class="w-1/2 bg-brand-100/60 hover:bg-brand-100 text-brand-900 border border-brand-100 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                                <span>Add More Funds</span>
+                            </button>
+                            <button onclick="navigateTo('plan_detail', 'Growth Plus')" class="w-1/2 bg-brand-900 hover:bg-black text-white text-xs font-bold py-2 rounded-xl transition flex items-center justify-center space-x-1">
+                                <span>View Details</span>
+                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- BANK LEDGER SECTION -->
+                <div class="space-y-4 pt-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <h2 class="text-sm font-bold text-neutralScale-900 uppercase tracking-wider">BANK LEDGER (GROWTH PLAN)</h2>
+                        </div>
+                        <span class="self-start sm:self-auto text-[11px] font-bold text-brand-900 bg-brand-100/80 px-3 py-1 rounded-full border border-brand-100">16 Cash Flow Transactions</span>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-neutralScale-200 overflow-hidden shadow-xs">
+                        <div class="max-h-[420px] overflow-y-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse table-fixed">
+                                <thead class="sticky top-0 z-10 bg-neutralScale-100 shadow-2xs">
+                                    <tr class="border-b border-neutralScale-200 text-[10px] uppercase font-bold text-neutralScale-500 tracking-wider">
+                                        <th class="py-3.5 px-2 sm:px-6 w-1/3">DATE</th>
+                                        <th class="py-3.5 px-2 sm:px-6 w-1/3">TXN. TYPE</th>
+                                        <th class="py-3.5 px-2 sm:px-6 w-1/3 text-right">CASHFLOW</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-neutralScale-100 text-xs font-medium">
+                                    <tr class="hover:bg-neutralScale-50 transition">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">08 Sep '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-brand-600">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Repayment to Bank</span>
+                                                <button onclick="handleInfoTrigger(this, 'Repayment of ₹13,650.94 settled on 08 Sep \'26 in account 5451140000404. UTR: CMS4942462466')" onmouseenter="handleInfoTrigger(this, 'Repayment of ₹13,650.94 settled on 08 Sep \'26 in account 5451140000404. UTR: CMS4942462466')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-neutralScale-200 text-neutralScale-500 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-brand-600 text-right">+₹ 13,650.94</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">07 Sep '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-brand-600">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Repayment to Bank</span>
+                                                <button onclick="handleInfoTrigger(this, 'Repayment of ₹84,486.74 settled on 07 Sep \'26 in account 5451140000404. UTR: CMS4942462467')" onmouseenter="handleInfoTrigger(this, 'Repayment of ₹84,486.74 settled on 07 Sep \'26 in account 5451140000404. UTR: CMS4942462467')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-neutralScale-200 text-neutralScale-500 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-brand-600 text-right">+₹ 84,486.74</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">07 Sep '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-brand-600">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Repayment to Bank</span>
+                                                <button onclick="handleInfoTrigger(this, 'Repayment of ₹5,793.38 settled on 07 Sep \'26 in account 5451140000404. UTR: CMS4942462468')" onmouseenter="handleInfoTrigger(this, 'Repayment of ₹5,793.38 settled on 07 Sep \'26 in account 5451140000404. UTR: CMS4942462468')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-neutralScale-200 text-neutralScale-500 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-brand-600 text-right">+₹ 5,793.38</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">04 Sep '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-brand-600">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Repayment to Bank</span>
+                                                <button onclick="handleInfoTrigger(this, 'Repayment of ₹30,961.69 settled on 04 Sep \'26 in account 5451140000404. UTR: CMS4942462469')" onmouseenter="handleInfoTrigger(this, 'Repayment of ₹30,961.69 settled on 04 Sep \'26 in account 5451140000404. UTR: CMS4942462469')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-neutralScale-200 text-neutralScale-500 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-brand-600 text-right">+₹ 30,961.69</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">02 Sep '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-brand-600">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Repayment to Bank</span>
+                                                <button onclick="handleInfoTrigger(this, 'Repayment of ₹12,946.84 settled on 02 Sep \'26 in account 5451140000404. UTR: CMS4942462470')" onmouseenter="handleInfoTrigger(this, 'Repayment of ₹12,946.84 settled on 02 Sep \'26 in account 5451140000404. UTR: CMS4942462470')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-neutralScale-200 text-neutralScale-500 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-brand-600 text-right">+₹ 12,946.84</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">01 Sep '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-brand-600">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Repayment to Bank</span>
+                                                <button onclick="handleInfoTrigger(this, 'Repayment of ₹56,563.41 settled on 01 Sep \'26 in account 5451140000404. UTR: CMS4942462471')" onmouseenter="handleInfoTrigger(this, 'Repayment of ₹56,563.41 settled on 01 Sep \'26 in account 5451140000404. UTR: CMS4942462471')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-neutralScale-200 text-neutralScale-500 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-brand-600 text-right">+₹ 56,563.41</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">31 Aug '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-brand-600">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Repayment to Bank</span>
+                                                <button onclick="handleInfoTrigger(this, 'Repayment of ₹14,412.70 settled on 31 Aug \'26 in account 5451140000404. UTR: CMS4942462472')" onmouseenter="handleInfoTrigger(this, 'Repayment of ₹14,412.70 settled on 31 Aug \'26 in account 5451140000404. UTR: CMS4942462472')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-neutralScale-200 text-neutralScale-500 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-brand-600 text-right">+₹ 14,412.70</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">25 Aug '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-brand-600">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Repayment to Bank</span>
+                                                <button onclick="handleInfoTrigger(this, 'Repayment of ₹51,192.30 settled on 25 Aug \'26 in account 5451140000404. UTR: CMS4942462473')" onmouseenter="handleInfoTrigger(this, 'Repayment of ₹51,192.30 settled on 25 Aug \'26 in account 5451140000404. UTR: CMS4942462473')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-neutralScale-200 text-neutralScale-500 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-brand-600 text-right">+₹ 51,192.30</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition bg-red-50/20">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">17 May '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-red-700">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Deposit</span>
+                                                <button onclick="handleInfoTrigger(this, '₹1,13,850.00 deposited on 17 May \'26')" onmouseenter="handleInfoTrigger(this, '₹1,13,850.00 deposited on 17 May \'26')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-red-100 text-red-700 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-red-600 text-right">-₹ 1,13,850.00</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition bg-red-50/20">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">12 May '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-red-700">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Deposit</span>
+                                                <button onclick="handleInfoTrigger(this, '₹2,13,000.00 deposited on 12 May \'26')" onmouseenter="handleInfoTrigger(this, '₹2,13,000.00 deposited on 12 May \'26')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-red-100 text-red-700 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-red-600 text-right">-₹ 2,13,000.00</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">12 May '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-brand-600">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Repayment to Bank</span>
+                                                <button onclick="handleInfoTrigger(this, 'Repayment of ₹1,95,703.30 settled on 12 May \'26 in account 5451140000404. UTR: CMS4942462474')" onmouseenter="handleInfoTrigger(this, 'Repayment of ₹1,95,703.30 settled on 12 May \'26 in account 5451140000404. UTR: CMS4942462474')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-neutralScale-200 text-neutralScale-500 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-brand-600 text-right">+₹ 1,95,703.30</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition bg-red-50/20">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">10 May '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-red-700">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Deposit</span>
+                                                <button onclick="handleInfoTrigger(this, '₹1,46,000.00 deposited on 10 May \'26')" onmouseenter="handleInfoTrigger(this, '₹1,46,000.00 deposited on 10 May \'26')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-red-100 text-red-700 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-red-600 text-right">-₹ 1,46,000.00</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition bg-red-50/20">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">09 May '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-red-700">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Deposit</span>
+                                                <button onclick="handleInfoTrigger(this, '₹1,50,000.00 deposited on 09 May \'26')" onmouseenter="handleInfoTrigger(this, '₹1,50,000.00 deposited on 09 May \'26')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-red-100 text-red-700 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-red-600 text-right">-₹ 1,50,000.00</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition bg-red-50/20">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">08 May '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-red-700">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Deposit</span>
+                                                <button onclick="handleInfoTrigger(this, '₹1,87,497.00 deposited on 08 May \'26')" onmouseenter="handleInfoTrigger(this, '₹1,87,497.00 deposited on 08 May \'26')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-red-100 text-red-700 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-red-600 text-right">-₹ 1,87,497.00</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">08 May '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-brand-600">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Repayment to Bank</span>
+                                                <button onclick="handleInfoTrigger(this, 'Repayment of ₹50,274.90 settled on 08 May \'26 in account 5451140000404. UTR: CMS4942462475')" onmouseenter="handleInfoTrigger(this, 'Repayment of ₹50,274.90 settled on 08 May \'26 in account 5451140000404. UTR: CMS4942462475')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-neutralScale-200 text-neutralScale-500 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-brand-600 text-right">+₹ 50,274.90</td>
+                                    </tr>
+                                    <tr class="hover:bg-neutralScale-50 transition">
+                                        <td class="py-3 px-2 sm:px-6 text-neutralScale-500">07 May '26</td>
+                                        <td class="py-3 px-2 sm:px-6 font-semibold text-brand-600">
+                                            <span class="inline-flex items-center gap-1 flex-wrap">
+                                                <span>Repayment to Bank</span>
+                                                <button onclick="handleInfoTrigger(this, 'Repayment of ₹5,05,129.47 settled on 07 May \'26 in account 5451140000404. UTR: CMS4942462476')" onmouseenter="handleInfoTrigger(this, 'Repayment of ₹5,05,129.47 settled on 07 May \'26 in account 5451140000404. UTR: CMS4942462476')" onmouseleave="hideGlobalTooltip()" class="p-0.5 rounded-full hover:bg-neutralScale-200 text-neutralScale-500 transition inline-flex items-center justify-center">
+                                                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-2 sm:px-6 font-bold text-brand-600 text-right">+₹ 5,05,129.47</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PLAN SPECIFIC DETAILED VIEW (P2P EDGE) -->
+            <div id="view-plan-detail" class="space-y-6 hidden">
+                <button onclick="navigateTo('plans_list')" class="inline-flex items-center text-xs font-bold text-neutralScale-500 hover:text-brand-900 transition">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5 mr-1"></i> Back to Invested Plans
+                </button>
+
+                <div class="bg-white p-4 sm:p-6 rounded-2xl border border-neutralScale-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="space-y-1.5">
+                        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                            <h1 id="selected-plan-title" class="text-xl font-bold text-neutralScale-900">Growth Pro 2 Months</h1>
+                            <div class="bg-brand-100/70 text-brand-900 text-xs font-bold px-3 py-0.5 rounded-full border border-brand-100 flex items-center space-x-1.5 whitespace-nowrap">
+                                <span id="selected-plan-xirr">Avg. XIRR 12.8%</span>
+                                <button onclick="refreshXIRRAction(this, 'detail')" title="Refresh XIRR" class="hover:text-black transition focus:outline-none">
+                                    <i data-lucide="rotate-cw" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-neutralScale-500">Plan details, payouts, bank repayments, and active lock-in loans</p>
+                    </div>
+
+                    <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
+                        <div class="flex bg-neutralScale-100 p-1 rounded-xl border border-neutralScale-200 w-full sm:w-auto">
+                            <button id="plan-state-btn-active" onclick="switchPlanState('active')" class="flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg bg-white text-brand-900 shadow-xs transition">
+                                Active Lock-ins (<span id="count-state-active">10</span>)
+                            </button>
+                            <button id="plan-state-btn-closed" onclick="switchPlanState('closed')" class="flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg text-neutralScale-500 hover:text-neutralScale-900 transition">
+                                Closed Lock-ins (<span id="count-state-closed">8</span>)
+                            </button>
+                        </div>
+
+                        <button id="plan-detail-add-btn" onclick="addFundsAction(currentPlanName)" class="w-full sm:w-auto justify-center bg-brand-900 hover:bg-black text-white font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center space-x-1.5 shadow-xs shrink-0">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            <span id="dynamic-add-funds-label">Add Funds</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div class="bg-brand-900 text-white p-5 rounded-2xl shadow-sm flex flex-col justify-between items-center text-center space-y-2 border border-brand-700">
+                            <div class="flex items-center space-x-1.5 text-brand-100/80 text-xs font-medium justify-center">
+                                <span>Current Value</span>
+                                <i data-lucide="info" class="w-3.5 h-3.5 text-brand-100/70 cursor-pointer" 
+                                   onclick="handleInfoTrigger(this, 'The money you currently have actively working in ongoing loans for this plan.')"
+                                   onmouseenter="handleInfoTrigger(this, 'The money you currently have actively working in ongoing loans for this plan.')" 
+                                   onmouseleave="hideGlobalTooltip()"></i>
+                            </div>
+                            <p id="plan-current-val" class="text-3xl font-extrabold text-white tracking-tight">₹90,000</p>
+                            <span class="text-[10px] bg-brand-700/60 text-brand-100 px-2.5 py-0.5 rounded-full">Active capital in circulation</span>
+                        </div>
+
+                        <div class="bg-brand-900 text-white p-5 rounded-2xl shadow-sm flex flex-col justify-between items-center text-center space-y-2 border border-brand-700">
+                            <div class="flex items-center space-x-1.5 text-brand-100/80 text-xs font-medium justify-center">
+                                <span>Net Returns</span>
+                                <i id="plan-net-returns-info-icon" data-lucide="info" class="w-3.5 h-3.5 text-brand-500 cursor-pointer" 
+                                   onmouseleave="hideGlobalTooltip()"></i>
+                            </div>
+                            <p id="plan-returns-val" class="text-3xl font-extrabold text-brand-500 tracking-tight">+₹21,500</p>
+                            <span class="text-[10px] bg-brand-500/20 text-brand-500 font-semibold px-2.5 py-0.5 rounded-full">Net profit generated to date</span>
+                        </div>
+
+                        <div class="bg-gradient-to-b from-brand-700 to-brand-900 text-white p-5 rounded-2xl shadow-sm flex flex-col justify-between items-center text-center space-y-2 border border-brand-500/30">
+                            <div class="flex items-center space-x-1.5 text-brand-100 text-xs font-bold justify-center">
+                                <span>Net Repaid to Bank</span>
+                                <i data-lucide="info" class="w-3.5 h-3.5 text-brand-100 cursor-pointer" 
+                                   onclick="handleInfoTrigger(this, 'Total money sent directly back to your bank account from this plan so far.<br><br><strong>Formula:</strong> Principal Received + Net Interest Received')"
+                                   onmouseenter="handleInfoTrigger(this, 'Total money sent directly back to your bank account from this plan so far.<br><br><strong>Formula:</strong> Principal Received + Net Interest Received')" 
+                                   onmouseleave="hideGlobalTooltip()"></i>
+                            </div>
+                            <p id="plan-net-repaid" class="text-3xl font-extrabold text-white tracking-tight">₹1,31,500</p>
+                            <span class="text-[10px] bg-white/10 text-brand-100 font-medium px-2.5 py-0.5 rounded-full">Principal Received + Net Interest Received</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-xl border border-neutralScale-200 shadow-2xs space-y-1.5">
+                            <div class="flex items-center justify-between text-neutralScale-500">
+                                <span class="text-xs font-semibold flex items-center">Total Initial Amount</span>
+                                <i data-lucide="layers" class="w-4 h-4 text-neutralScale-500"></i>
+                            </div>
+                            <p id="plan-initial-val" class="text-xl font-bold text-neutralScale-900">₹2,00,000</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-neutralScale-200 shadow-2xs space-y-1.5">
+                            <div class="flex items-center justify-between text-neutralScale-500">
+                                <span class="text-xs font-semibold flex items-center">Total Amount Lent</span>
+                                <i data-lucide="send" class="w-4 h-4 text-neutralScale-500"></i>
+                            </div>
+                            <p id="plan-lent-val" class="text-xl font-bold text-neutralScale-900">₹1,96,000</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-neutralScale-200 shadow-2xs space-y-1.5">
+                            <div class="flex items-center justify-between text-neutralScale-500">
+                                <span class="text-xs font-semibold flex items-center">Principal Received</span>
+                                <i data-lucide="arrow-down-left" class="w-4 h-4 text-neutralScale-500"></i>
+                            </div>
+                            <p id="plan-principal-recd" class="text-xl font-bold text-neutralScale-900">₹1,10,000</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-neutralScale-200 shadow-2xs space-y-1.5">
+                            <div class="flex items-center justify-between text-neutralScale-500">
+                                <span class="text-xs font-semibold flex items-center">Net Interest Received</span>
+                                <i data-lucide="percent" class="w-4 h-4 text-brand-600"></i>
+                            </div>
+                            <p id="plan-interest-recd" class="text-xl font-bold text-brand-600">₹21,500</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-neutralScale-100 border border-neutralScale-200 rounded-xl px-5 py-3 flex items-center justify-between text-xs text-neutralScale-900 font-medium">
+                        <div class="flex items-center space-x-1.5 text-neutralScale-500">
+                            <span>Portfolio NPA Rate:</span>
+                            <strong id="plan-npa-text" class="text-amber-600 font-bold">0.18% (₹162)</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <h3 id="lockin-table-heading" class="text-xs font-bold text-neutralScale-900 uppercase tracking-wider">ACTIVE LOCK-IN CONTRACTS</h3>
+                        <span id="lockin-state-badge" class="self-start sm:self-auto text-[11px] font-semibold text-brand-900 bg-brand-100/60 px-2.5 py-0.5 rounded-md">Showing 10 Active Rows</span>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-neutralScale-200 overflow-hidden shadow-xs">
+                        <div class="max-h-[380px] overflow-y-auto overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse min-w-[600px]">
+                                <thead class="sticky top-0 z-10 bg-neutralScale-100 shadow-2xs">
+                                    <tr class="border-b border-neutralScale-200 text-[10px] uppercase font-bold text-neutralScale-500 tracking-wider">
+                                        <th class="py-3.5 px-4 sm:px-6">LOCK-IN ID</th>
+                                        <th class="py-3.5 px-4 sm:px-6">START DATE</th>
+                                        <th class="py-3.5 px-4 sm:px-6">INITIAL AMOUNT</th>
+                                        <th class="py-3.5 px-4 sm:px-6">CURRENT VALUE</th>
+                                        <th class="py-3.5 px-4 sm:px-6">NET RETURN</th>
+                                        <th class="py-3.5 px-4 sm:px-6 text-right">XIRR</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lockin-table-body" class="divide-y divide-neutralScale-100 text-xs">
+                                    <!-- Dynamic Lock-in Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Javascript Controller -->
+    <script>
+        lucide.createIcons();
+
+        let currentPlanName = 'Growth Pro 2 Months';
+        let currentPlanState = 'active';
+        let currentTab = 'p2p';
+        let selectedNcdKey = 'cashtree';
+        let currentNcdPayoutFilter = 'all';
+        let currentNcdHoldingStateFilter = 'all';
+        let overviewXIRRVal = 12.4;
+
+        // ACCURATE RECONCILED SOURAV'S PORTFOLIO LIFETIME EARNINGS DATA
+        const portfolioEarningsData = {
+            lifetimeEarningsBreakdown: {
+                p2pEdge: 48250,
+                estates: 2000000,
+                ncd: 132422.40
+            }
+        };
+
+        const sourceLabelMapping = {
+            p2pEdge: "P2P Edge",
+            estates: "Estates",
+            ncd: "NCDs"
+        };
+
+        // NCD RECONCILED DATASTORE (Including Status per Holding)
+        const ncdMasterData = {
+            cashtree: {
+                status: "active",
+                name: "Cashtree NCD Series A",
+                issuer: "Cashtree",
+                isin: "INE000A01000",
+                amountInvested: 1000000,
+                units: 1000,
+                faceValue: 1000,
+                couponRate: 11.39,
+                xirrPreTax: 11.99,
+                tenureMonths: 18,
+                paymentDate: "10 Feb 2026",
+                allotmentDate: "10 Feb 2026",
+                maturityDate: "10 Aug 2027",
+                tdsRate: 10,
+                listingType: "Unlisted, no exchange listing date",
+                issueOpenDate: "01 Feb 2026",
+                issueCloseDate: "10 Feb 2026",
+                interestStartDate: "10 Feb 2026",
+                payoutFrequency: "Monthly",
+                totalScheduledInterest: 170856,
+                schedule: [
+                    { counter: 1,  date: "10 Mar 2026", interest: 9492, principal: 0,       tax: 949.20, status: "Paid",     paidDate: "10 Mar 2026" },
+                    { counter: 2,  date: "10 Apr 2026", interest: 9492, principal: 0,       tax: 949.20, status: "Paid",     paidDate: "10 Apr 2026" },
+                    { counter: 3,  date: "10 May 2026", interest: 9492, principal: 0,       tax: 949.20, status: "Paid",     paidDate: "10 May 2026" },
+                    { counter: 4,  date: "10 Jun 2026", interest: 9492, principal: 0,       tax: 949.20, status: "Paid",     paidDate: "10 Jun 2026" },
+                    { counter: 5,  date: "10 Jul 2026", interest: 9492, principal: 0,       tax: 949.20, status: "Paid",     paidDate: "10 Jul 2026" },
+                    { counter: 6,  date: "10 Aug 2026", interest: 9492, principal: 0,       tax: 949.20, status: "Paid",     paidDate: "10 Aug 2026" },
+                    { counter: 7,  date: "10 Sep 2026", interest: 9492, principal: 0,       tax: 949.20, status: "Paid",     paidDate: "10 Sep 2026" },
+                    { counter: 8,  date: "10 Oct 2026", interest: 9492, principal: 0,       tax: 949.20, status: "Paid",     paidDate: "10 Oct 2026" },
+                    { counter: 9,  date: "10 Nov 2026", interest: 9492, principal: 0,       tax: 949.20, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 10, date: "10 Dec 2026", interest: 9492, principal: 0,       tax: 949.20, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 11, date: "10 Jan 2027", interest: 9492, principal: 0,       tax: 949.20, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 12, date: "10 Feb 2027", interest: 9492, principal: 0,       tax: 949.20, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 13, date: "10 Mar 2027", interest: 9492, principal: 0,       tax: 949.20, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 14, date: "10 Apr 2027", interest: 9492, principal: 0,       tax: 949.20, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 15, date: "10 May 2027", interest: 9492, principal: 0,       tax: 949.20, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 16, date: "10 Jun 2027", interest: 9492, principal: 0,       tax: 949.20, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 17, date: "10 Jul 2027", interest: 9492, principal: 0,       tax: 949.20, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 18, date: "10 Aug 2027", interest: 9492, principal: 1000000, tax: 949.20, status: "Upcoming", paidDate: "Not paid yet" }
+                ]
+            },
+            incred: {
+                status: "active",
+                name: "InCred Finance NCD Series B",
+                issuer: "InCred Financial Services",
+                isin: "INE000B02000",
+                amountInvested: 500000,
+                units: 500,
+                faceValue: 1000,
+                couponRate: 10.80,
+                xirrPreTax: 11.35,
+                tenureMonths: 24,
+                paymentDate: "15 Feb 2026",
+                allotmentDate: "15 Feb 2026",
+                maturityDate: "15 Feb 2028",
+                tdsRate: 10,
+                listingType: "Unlisted, no exchange listing date",
+                issueOpenDate: "05 Feb 2026",
+                issueCloseDate: "15 Feb 2026",
+                interestStartDate: "15 Feb 2026",
+                payoutFrequency: "Monthly",
+                totalScheduledInterest: 108000,
+                schedule: [
+                    { counter: 1,  date: "15 Mar 2026", interest: 4500, principal: 0,      tax: 450.00, status: "Paid",     paidDate: "15 Mar 2026" },
+                    { counter: 2,  date: "15 Apr 2026", interest: 4500, principal: 0,      tax: 450.00, status: "Paid",     paidDate: "15 Apr 2026" },
+                    { counter: 3,  date: "15 May 2026", interest: 4500, principal: 0,      tax: 450.00, status: "Paid",     paidDate: "15 May 2026" },
+                    { counter: 4,  date: "15 Jun 2026", interest: 4500, principal: 0,      tax: 450.00, status: "Paid",     paidDate: "15 Jun 2026" },
+                    { counter: 5,  date: "15 Jul 2026", interest: 4500, principal: 0,      tax: 450.00, status: "Paid",     paidDate: "15 Jul 2026" },
+                    { counter: 6,  date: "15 Aug 2026", interest: 4500, principal: 0,      tax: 450.00, status: "Paid",     paidDate: "15 Aug 2026" },
+                    { counter: 7,  date: "15 Sep 2026", interest: 4500, principal: 0,      tax: 450.00, status: "Paid",     paidDate: "15 Sep 2026" },
+                    { counter: 8,  date: "15 Oct 2026", interest: 4500, principal: 0,      tax: 450.00, status: "Paid",     paidDate: "15 Oct 2026" },
+                    { counter: 9,  date: "15 Nov 2026", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 10, date: "15 Dec 2026", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 11, date: "15 Jan 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 12, date: "15 Feb 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 13, date: "15 Mar 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 14, date: "15 Apr 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 15, date: "15 May 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 16, date: "15 Jun 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 17, date: "15 Jul 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 18, date: "15 Aug 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 19, date: "15 Sep 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 20, date: "15 Oct 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 21, date: "15 Nov 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 22, date: "15 Dec 2027", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 23, date: "15 Jan 2028", interest: 4500, principal: 0,      tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" },
+                    { counter: 24, date: "15 Feb 2028", interest: 4500, principal: 500000, tax: 450.00, status: "Upcoming", paidDate: "Not paid yet" }
+                ]
+            },
+            northern: {
+                status: "closed",
+                name: "Northern Arc Capital NCD Series C",
+                issuer: "Northern Arc Capital Limited",
+                isin: "INE000C03000",
+                amountInvested: 300000,
+                units: 300,
+                faceValue: 1000,
+                couponRate: 12.00,
+                xirrPreTax: 12.45,
+                tenureMonths: 12,
+                paymentDate: "10 Jan 2025",
+                allotmentDate: "10 Jan 2025",
+                maturityDate: "10 Jan 2026",
+                tdsRate: 10,
+                listingType: "Unlisted, fully redeemed & settled",
+                issueOpenDate: "01 Jan 2025",
+                issueCloseDate: "10 Jan 2025",
+                interestStartDate: "10 Jan 2025",
+                payoutFrequency: "Monthly",
+                totalScheduledInterest: 36000,
+                schedule: [
+                    { counter: 1,  date: "10 Feb 2025", interest: 3000, principal: 0,      tax: 300.00, status: "Paid", paidDate: "10 Feb 2025" },
+                    { counter: 2,  date: "10 Mar 2025", interest: 3000, principal: 0,      tax: 300.00, status: "Paid", paidDate: "10 Mar 2025" },
+                    { counter: 3,  date: "10 Apr 2025", interest: 3000, principal: 0,      tax: 300.00, status: "Paid", paidDate: "10 Apr 2025" },
+                    { counter: 4,  date: "10 May 2025", interest: 3000, principal: 0,      tax: 300.00, status: "Paid", paidDate: "10 May 2025" },
+                    { counter: 5,  date: "10 Jun 2025", interest: 3000, principal: 0,      tax: 300.00, status: "Paid", paidDate: "10 Jun 2025" },
+                    { counter: 6,  date: "10 Jul 2025", interest: 3000, principal: 0,      tax: 300.00, status: "Paid", paidDate: "10 Jul 2025" },
+                    { counter: 7,  date: "10 Aug 2025", interest: 3000, principal: 0,      tax: 300.00, status: "Paid", paidDate: "10 Aug 2025" },
+                    { counter: 8,  date: "10 Sep 2025", interest: 3000, principal: 0,      tax: 300.00, status: "Paid", paidDate: "10 Sep 2025" },
+                    { counter: 9,  date: "10 Oct 2025", interest: 3000, principal: 0,      tax: 300.00, status: "Paid", paidDate: "10 Oct 2025" },
+                    { counter: 10, date: "10 Nov 2025", interest: 3000, principal: 0,      tax: 300.00, status: "Paid", paidDate: "10 Nov 2025" },
+                    { counter: 11, date: "10 Dec 2025", interest: 3000, principal: 0,      tax: 300.00, status: "Paid", paidDate: "10 Dec 2025" },
+                    { counter: 12, date: "10 Jan 2026", interest: 3000, principal: 300000, tax: 300.00, status: "Paid", paidDate: "10 Jan 2026" }
+                ]
+            }
+        };
+
+        function switchNcdStateFilter(state) {
+            currentNcdHoldingStateFilter = state;
+
+            const btnAll = document.getElementById('ncd-state-filter-all');
+            const btnActive = document.getElementById('ncd-state-filter-active');
+            const btnClosed = document.getElementById('ncd-state-filter-closed');
+
+            const activeClass = "px-3 py-1 rounded-lg bg-white text-brand-900 shadow-2xs transition font-bold";
+            const inactiveClass = "px-3 py-1 rounded-lg text-neutralScale-500 hover:text-neutralScale-900 transition";
+
+            btnAll.className = state === 'all' ? activeClass : inactiveClass;
+            btnActive.className = state === 'active' ? activeClass : inactiveClass;
+            btnClosed.className = state === 'closed' ? activeClass : inactiveClass;
+
+            const cards = document.querySelectorAll('.ncd-holding-card');
+            cards.forEach(card => {
+                const cardStatus = card.getAttribute('data-status');
+                if (state === 'all' || cardStatus === state) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        function initPortfolioLifetimeEarnings() {
+            const breakdown = portfolioEarningsData.lifetimeEarningsBreakdown;
+            let container = document.getElementById('lifetime-earnings-breakdown-list');
+            container.innerHTML = '';
+
+            let computedTotal = 0;
+
+            for (const [key, value] of Object.entries(breakdown)) {
+                if (value !== 0 && value !== null && value !== undefined) {
+                    computedTotal += value;
+                    
+                    const row = document.createElement('div');
+                    row.className = 'flex justify-between items-center';
+                    row.innerHTML = `
+                        <span class="flex items-center text-brand-100/90">
+                            <span class="w-1.5 h-1.5 rounded-full bg-brand-100 mr-2"></span>
+                            ${sourceLabelMapping[key] || key}
+                        </span>
+                        <span class="font-bold">₹${value.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    `;
+                    container.appendChild(row);
+                }
+            }
+
+            document.getElementById('portfolio-lifetime-earnings-total').innerText = `₹${computedTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+
+        // Switch Tabs in Portfolio Overview (P2P Edge vs NCDs)
+        function switchTab(tab) {
+            currentTab = tab;
+            const contentP2P = document.getElementById('content-tab-p2p');
+            const contentNCD = document.getElementById('content-tab-ncd');
+            const viewDetail = document.getElementById('view-ncd-detail');
+            const btnP2P = document.getElementById('tab-btn-p2p');
+            const btnNCD = document.getElementById('tab-btn-ncd');
+            const indP2P = document.getElementById('tab-indicator-p2p');
+            const indNCD = document.getElementById('tab-indicator-ncd');
+            const sidebar = document.getElementById('shared-sidebar-container');
+            const ncdSidebarTarget = document.getElementById('ncd-sidebar-target');
+
+            viewDetail.classList.add('hidden');
+            document.getElementById('view-portfolio').classList.remove('hidden');
+
+            if (tab === 'p2p') {
+                contentP2P.classList.remove('hidden');
+                contentNCD.classList.add('hidden');
+                
+                btnP2P.className = "pb-2.5 text-sm font-bold text-brand-900 relative";
+                btnNCD.className = "pb-2.5 text-sm font-medium text-neutralScale-500 hover:text-neutralScale-900 relative";
+                
+                indP2P.classList.remove('hidden');
+                indNCD.classList.add('hidden');
+
+                if (ncdSidebarTarget.contains(sidebar)) {
+                    contentP2P.appendChild(sidebar);
+                }
+            } else if (tab === 'ncd') {
+                contentP2P.classList.add('hidden');
+                contentNCD.classList.remove('hidden');
+
+                btnNCD.className = "pb-2.5 text-sm font-bold text-brand-900 relative";
+                btnP2P.className = "pb-2.5 text-sm font-medium text-neutralScale-500 hover:text-neutralScale-900 relative";
+
+                indNCD.classList.remove('hidden');
+                indP2P.classList.add('hidden');
+
+                ncdSidebarTarget.appendChild(sidebar);
+            }
+
+            updateBreadcrumbs('portfolio');
+        }
+
+        // UNIFIED SCREEN 2 NAVIGATION: NCD DETAILED VIEW (INVESTMENT DETAILS + SCHEDULE)
+        function navigateToNcdDetailView(key) {
+            selectedNcdKey = key;
+            const data = ncdMasterData[key];
+
+            document.getElementById('view-portfolio').classList.add('hidden');
+            document.getElementById('view-ncd-detail').classList.remove('hidden');
+
+            document.getElementById('ncd-detail-title').innerText = data.name;
+            document.getElementById('ncd-detail-subtitle').innerText = `Issuer: ${data.issuer} | ISIN: ${data.isin}`;
+            document.getElementById('ncd-schedule-section-heading').innerText = `Complete Payout Schedule (${data.tenureMonths} Months)`;
+
+            // Update Detail Screen Status Pill
+            const statusPill = document.getElementById('ncd-detail-status-pill');
+            if (data.status === 'active') {
+                statusPill.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200";
+                statusPill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5"></span>Active Investment`;
+            } else {
+                statusPill.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-neutralScale-200 text-neutralScale-800 border border-neutralScale-300";
+                statusPill.innerHTML = `<i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-neutralScale-600 mr-1.5"></i>Closed (Fully Matured)`;
+            }
+
+            // Populate Complete Investment Details Grid
+            const grid = document.getElementById('ncd-detail-grid');
+            grid.innerHTML = `
+                <div><span class="text-neutralScale-500 text-[10px] block">Investor Name</span><strong class="text-neutralScale-900">Sourav Singh</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">NCD Series / Security Name</span><strong class="text-neutralScale-900">${data.name}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Investment Status</span><strong class="${data.status === 'active' ? 'text-emerald-700 font-bold' : 'text-neutralScale-700 font-bold'}">${data.status === 'active' ? 'Active' : 'Closed (Matured)'}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Issuer Name</span><strong class="text-neutralScale-900">${data.issuer}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Amount Invested</span><strong class="text-neutralScale-900">₹${data.amountInvested.toLocaleString('en-IN')}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Date of Funds Receipt</span><strong class="text-neutralScale-900">${data.paymentDate}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">NCD Units Allotted</span><strong class="text-neutralScale-900">${data.units} Units</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Date of Allotment</span><strong class="text-neutralScale-900">${data.allotmentDate}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Tenure</span><strong class="text-neutralScale-900">${data.tenureMonths} Months</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Maturity Date</span><strong class="text-neutralScale-900">${data.maturityDate}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Annualised XIRR (Pre-Tax)</span><strong class="text-brand-600 font-bold">${data.xirrPreTax}% p.a.</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Coupon Rate</span><strong class="text-neutralScale-900">${data.couponRate}% p.a.</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">TDS Deduction Rate</span><strong class="text-neutralScale-900">${data.tdsRate}% on Interest Component</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Face Value per NCD</span><strong class="text-neutralScale-900">₹${data.faceValue}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Listing Status</span><strong class="text-neutralScale-900">${data.listingType}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">ISIN</span><strong class="text-neutralScale-900">${data.isin}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Issue Open Date</span><strong class="text-neutralScale-900">${data.issueOpenDate}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Issue Close Date</span><strong class="text-neutralScale-900">${data.issueCloseDate}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Interest Payout Frequency</span><strong class="text-neutralScale-900">${data.payoutFrequency}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Interest Start Date</span><strong class="text-neutralScale-900">${data.interestStartDate}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Total Scheduled Interest</span><strong class="text-brand-600 font-bold">₹${data.totalScheduledInterest.toLocaleString('en-IN')}.00</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Principal Returned at Maturity</span><strong class="text-brand-900 font-bold">₹${data.amountInvested.toLocaleString('en-IN')}.00</strong></div>
+            `;
+
+            renderNcdPayoutScheduleTables();
+            updateBreadcrumbs('ncd_detail');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderNcdPayoutScheduleTables() {
+            const data = ncdMasterData[selectedNcdKey];
+            const desktopTbody = document.getElementById('ncd-payout-desktop-tbody');
+            const mobileTbody = document.getElementById('ncd-payout-mobile-tbody');
+            const summaryStrip = document.getElementById('ncd-payout-summary-strip');
+
+            desktopTbody.innerHTML = '';
+            mobileTbody.innerHTML = '';
+
+            let filteredList = data.schedule;
+            if (currentNcdPayoutFilter === 'paid') {
+                filteredList = data.schedule.filter(item => item.status === 'Paid');
+            } else if (currentNcdPayoutFilter === 'upcoming') {
+                filteredList = data.schedule.filter(item => item.status === 'Upcoming');
+            }
+
+            let sumGross = 0;
+            let sumPrincipal = 0;
+            let sumTax = 0;
+            let sumNet = 0;
+
+            data.schedule.forEach(item => {
+                const gross = item.interest + item.principal;
+                const net = gross - item.tax;
+                sumGross += gross;
+                sumPrincipal += item.principal;
+                sumTax += item.tax;
+                sumNet += net;
+            });
+
+            summaryStrip.innerHTML = `
+                <div><span class="text-neutralScale-500 text-[10px] block">Total Gross Scheduled</span><strong class="text-neutralScale-900 font-bold">₹${sumGross.toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Principal Repaid</span><strong class="text-neutralScale-900 font-bold">₹${sumPrincipal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">TDS Deducted</span><strong class="text-neutralScale-900 font-bold">₹${sumTax.toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong></div>
+                <div><span class="text-neutralScale-500 text-[10px] block">Total Net Scheduled</span><strong class="text-brand-600 font-bold">₹${sumNet.toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong></div>
+            `;
+
+            filteredList.forEach(item => {
+                const grossAmount = item.interest + item.principal;
+                const paidAmount = grossAmount - item.tax;
+                const isFinalMaturity = item.principal > 0;
+
+                // 1. DESKTOP ROW
+                const trDesktop = document.createElement('tr');
+                trDesktop.className = "hover:bg-neutralScale-50 transition border-b border-neutralScale-100";
+                trDesktop.innerHTML = `
+                    <td class="py-3 px-3 font-semibold text-neutralScale-500">${item.counter}</td>
+                    <td class="py-3 px-3 font-bold text-neutralScale-900">
+                        ${item.date}
+                        ${isFinalMaturity ? '<span class="ml-1 text-[9px] bg-brand-100 text-brand-900 px-1.5 py-0.5 rounded font-bold">Maturity</span>' : ''}
+                    </td>
+                    <td class="py-3 px-3 font-bold text-neutralScale-900 text-right">₹${grossAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td class="py-3 px-3 font-semibold text-neutralScale-700 text-right">₹${item.interest.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td class="py-3 px-3 font-semibold ${item.principal > 0 ? 'text-brand-900 font-bold' : 'text-neutralScale-400'} text-right">₹${item.principal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td class="py-3 px-3 font-semibold text-amber-700 text-right">₹${item.tax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td class="py-3 px-3 font-extrabold text-brand-600 text-right">₹${paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td class="py-3 px-3 text-center">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${item.status === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                            ${item.status}
+                        </span>
+                    </td>
+                `;
+                desktopTbody.appendChild(trDesktop);
+
+                // 2. MOBILE COMPACT ROW
+                const trMobile = document.createElement('tr');
+                trMobile.className = "hover:bg-neutralScale-50 transition border-b border-neutralScale-100";
+                trMobile.innerHTML = `
+                    <td class="py-3 px-3 font-bold text-neutralScale-900">
+                        ${item.date}
+                        ${isFinalMaturity ? '<span class="block text-[8px] text-brand-900 font-bold">Maturity</span>' : ''}
+                    </td>
+                    <td class="py-3 px-3 font-extrabold text-brand-600 text-right">₹${paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td class="py-3 px-3 text-center">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold ${item.status === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                            ${item.status}
+                        </span>
+                    </td>
+                    <td class="py-3 px-2 text-center">
+                        <button onclick="openMobilePayoutInfoSheet(${item.counter})" class="p-1.5 rounded-full bg-neutralScale-100 hover:bg-neutralScale-200 text-brand-900">
+                            <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </td>
+                `;
+                mobileTbody.appendChild(trMobile);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Mobile Bottom Sheet for Row-Level Info
+        function openMobilePayoutInfoSheet(counter) {
+            const data = ncdMasterData[selectedNcdKey];
+            const item = data.schedule.find(row => row.counter === counter);
+            if (!item) return;
+
+            const grossAmount = item.interest + item.principal;
+            const paidAmount = grossAmount - item.tax;
+
+            const htmlContent = `
+                <div class="flex justify-between items-center border-b border-neutralScale-200 pb-2">
+                    <h4 class="font-bold text-sm text-neutralScale-900">Payout #${item.counter} Breakdown</h4>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${item.status === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${item.status}</span>
+                </div>
+                <div class="space-y-2 pt-1 text-xs">
+                    <div class="flex justify-between"><span class="text-neutralScale-500">Payout Date:</span><strong class="text-neutralScale-900">${item.date}</strong></div>
+                    <div class="flex justify-between"><span class="text-neutralScale-500">Gross Amount:</span><strong class="text-neutralScale-900">₹${grossAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong></div>
+                    <div class="flex justify-between"><span class="text-neutralScale-500">Interest Component:</span><strong class="text-neutralScale-900">₹${item.interest.toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong></div>
+                    <div class="flex justify-between"><span class="text-neutralScale-500">Principal Repayment:</span><strong class="text-brand-900 font-bold">₹${item.principal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong></div>
+                    <div class="flex justify-between"><span class="text-neutralScale-500">TDS Deducted (10%):</span><strong class="text-amber-700">₹${item.tax.toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong></div>
+                    <div class="flex justify-between pt-2 border-t border-neutralScale-200"><span class="font-bold text-neutralScale-900">Net Amount Paid:</span><strong class="text-brand-600 font-extrabold text-sm">₹${paidAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</strong></div>
+                </div>
+            `;
+
+            openMobileBottomSheet(htmlContent);
+        }
+
+        function filterNcdPayouts(filterType) {
+            currentNcdPayoutFilter = filterType;
+
+            const btnAll = document.getElementById('payout-filter-all');
+            const btnPaid = document.getElementById('payout-filter-paid');
+            const btnUpcoming = document.getElementById('payout-filter-upcoming');
+
+            const activeClass = "px-3 py-1 rounded-lg bg-white text-brand-900 shadow-2xs transition";
+            const inactiveClass = "px-3 py-1 rounded-lg text-neutralScale-500 hover:text-neutralScale-900 transition";
+
+            btnAll.className = filterType === 'all' ? activeClass : inactiveClass;
+            btnPaid.className = filterType === 'paid' ? activeClass : inactiveClass;
+            btnUpcoming.className = filterType === 'upcoming' ? activeClass : inactiveClass;
+
+            renderNcdPayoutScheduleTables();
+        }
+
+        // Certificate Modal Handlers
+        function openNcdDocumentModal() {
+            const data = ncdMasterData[selectedNcdKey];
+            document.getElementById('modal-ncd-title').innerText = `${data.name} Certificate`;
+            document.getElementById('modal-ncd-body').innerHTML = `
+                <p class="font-bold text-brand-900">${data.name}</p>
+                <p><strong>Holder Name:</strong> Sourav Singh</p>
+                <p><strong>Status:</strong> <span class="capitalize font-bold">${data.status}</span></p>
+                <p><strong>ISIN:</strong> ${data.isin}</p>
+                <p><strong>Units Allotted:</strong> ${data.units} Units</p>
+                <p><strong>Face Value:</strong> ₹${data.faceValue} per unit (Total: ₹${data.amountInvested.toLocaleString('en-IN')})</p>
+                <p><strong>Date of Allotment:</strong> ${data.allotmentDate}</p>
+                <p class="text-[10px] text-neutralScale-500 pt-2 border-t border-neutralScale-200">
+                    * Official digitally signed allotment certificate preview for prototype demo purposes.
+                </p>
+            `;
+            document.getElementById('ncd-document-modal').classList.remove('hidden');
+        }
+
+        function closeNcdDocumentModal() {
+            document.getElementById('ncd-document-modal').classList.add('hidden');
+        }
+
+        // Collapsible Sidebar Cards
+        function togglePortfolioCurrentValue() {
+            const content = document.getElementById('current-val-collapse-content');
+            const chevron = document.getElementById('current-val-chevron');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+            } else {
+                content.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+            }
+        }
+
+        function togglePortfolioLifetimeEarnings() {
+            const content = document.getElementById('lifetime-earnings-collapse-content');
+            const chevron = document.getElementById('lifetime-earnings-chevron');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+            } else {
+                content.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+            }
+        }
+
+        // Mobile Sidebar Controls
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('mobile-sidebar');
+            const backdrop = document.getElementById('mobile-sidebar-backdrop');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        // Mobile Bottom Sheet Handlers
+        function openMobileBottomSheet(content) {
+            const backdrop = document.getElementById('mobile-bottom-sheet-backdrop');
+            const sheet = document.getElementById('mobile-bottom-sheet');
+            const container = document.getElementById('mobile-bottom-sheet-content');
+
+            container.innerHTML = content;
+            backdrop.classList.remove('hidden');
+            
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                sheet.classList.remove('translate-y-full');
+            }, 10);
+        }
+
+        function closeMobileBottomSheet() {
+            const backdrop = document.getElementById('mobile-bottom-sheet-backdrop');
+            const sheet = document.getElementById('mobile-bottom-sheet');
+
+            backdrop.classList.add('opacity-0');
+            sheet.classList.add('translate-y-full');
+
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 300);
+        }
+
+        function handleInfoTrigger(element, content) {
+            if (window.innerWidth < 768) {
+                openMobileBottomSheet(content);
+            } else {
+                showGlobalTooltip(element, content);
+            }
+        }
+
+        function getNetReturnsTooltipHTML(netReturns, totalLent, netRepaid, currentValue) {
+            return `
+                <div class="space-y-1 text-left font-sans">
+                    <div class="font-bold border-b border-neutralScale-600 pb-1 text-brand-500">Net Returns Breakdown</div>
+                    <div class="flex justify-between space-x-4 pt-0.5">
+                        <span class="text-neutralScale-300">Net Returns:</span>
+                        <strong class="text-white">${netReturns}</strong>
+                    </div>
+                    <div class="flex justify-between space-x-4">
+                        <span class="text-neutralScale-300">Total Amount Lent:</span>
+                        <strong class="text-white">${totalLent}</strong>
+                    </div>
+                    <div class="flex justify-between space-x-4">
+                        <span class="text-neutralScale-300">Net Repaid To Bank:</span>
+                        <strong class="text-white">${netRepaid}</strong>
+                    </div>
+                    <div class="flex justify-between space-x-4">
+                        <span class="text-neutralScale-300">Current Value:</span>
+                        <strong class="text-white">${currentValue}</strong>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showGlobalTooltip(element, htmlContent) {
+            if (window.innerWidth < 768) return;
+
+            const tooltip = document.getElementById('global-tooltip');
+            const tooltipContent = document.getElementById('global-tooltip-content');
+            
+            tooltipContent.innerHTML = htmlContent;
+            tooltip.classList.remove('hidden');
+            
+            setTimeout(() => {
+                const rect = element.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+                
+                let top = rect.top - tooltipRect.height - 10;
+                let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+
+                if (top < 10) top = rect.bottom + 10;
+                if (left < 10) left = 10;
+                else if (left + tooltipRect.width > window.innerWidth - 10) {
+                    left = window.innerWidth - tooltipRect.width - 10;
+                }
+
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${left}px`;
+                tooltip.classList.remove('opacity-0');
+                tooltip.classList.add('opacity-100');
+            }, 0);
+        }
+
+        function hideGlobalTooltip() {
+            const tooltip = document.getElementById('global-tooltip');
+            tooltip.classList.remove('opacity-100');
+            tooltip.classList.add('opacity-0');
+            setTimeout(() => {
+                tooltip.classList.add('hidden');
+            }, 150);
+        }
+
+        // P2P EDGE DATA MAP
+        const plansDataMap = {
+            'Growth Pro 2 Months': {
+                xirr: 12.8,
+                active: {
+                    current: '₹90,000', initial: '₹2,00,000', lent: '₹1,96,000', returns: '+₹21,500', principalRecd: '₹1,10,000', interestRecd: '₹21,500', netRepaid: '₹1,31,500', npa: '0.18% (₹162)',
+                    lockins: [
+                        { id: '#05828074DBNF', startDate: '12 Jan 2026', initial: '₹25,000', current: '₹10,000', returnVal: '+₹2,800', xirr: '12.8%' },
+                        { id: '#08921142KLPQ', startDate: '18 Jan 2026', initial: '₹20,000', current: '₹10,000', returnVal: '+₹2,100', xirr: '12.7%' },
+                        { id: '#03829103PLMK', startDate: '25 Jan 2026', initial: '₹25,000', current: '₹12,000', returnVal: '+₹2,650', xirr: '12.9%' },
+                        { id: '#04729184QWER', startDate: '02 Feb 2026', initial: '₹15,000', current: '₹8,000',  returnVal: '+₹1,600', xirr: '12.6%' },
+                        { id: '#09182374TYUI', startDate: '10 Feb 2026', initial: '₹30,000', current: '₹15,000', returnVal: '+₹3,200', xirr: '13.0%' },
+                        { id: '#01928374OPAS', startDate: '15 Feb 2026', initial: '₹18,000', current: '₹7,000',  returnVal: '+₹1,850', xirr: '12.8%' },
+                        { id: '#02837461DFGH', startDate: '22 Feb 2026', initial: '₹22,000', current: '₹10,000', returnVal: '+₹2,350', xirr: '12.7%' },
+                        { id: '#03746281JKLZ', startDate: '01 Mar 2026', initial: '₹15,000', current: '₹6,000',  returnVal: '+₹1,550', xirr: '12.5%' },
+                        { id: '#04837261XCVB', startDate: '05 Mar 2026', initial: '₹12,000', current: '₹5,000',  returnVal: '+₹1,300', xirr: '12.8%' },
+                        { id: '#05938271BNMM', startDate: '10 Mar 2026', initial: '₹18,000', current: '₹7,000',  returnVal: '+₹2,100', xirr: '12.9%' }
+                    ]
+                },
+                closed: {
+                    current: '₹0', initial: '₹1,50,000', lent: '₹1,47,200', returns: '+₹16,400', principalRecd: '₹1,50,000', interestRecd: '₹16,400', netRepaid: '₹1,66,400', npa: '0.00% (₹0)',
+                    lockins: [
+                        { id: '#01928374CLSD', startDate: '10 Oct 2025', initial: '₹20,000', current: '₹0', returnVal: '+₹2,100', xirr: '12.5%' },
+                        { id: '#02837482CLSD', startDate: '15 Oct 2025', initial: '₹25,000', current: '₹0', returnVal: '+₹2,750', xirr: '12.8%' },
+                        { id: '#03829104CLSD', startDate: '01 Nov 2025', initial: '₹15,000', current: '₹0', returnVal: '+₹1,600', xirr: '12.4%' },
+                        { id: '#04829105CLSD', startDate: '12 Nov 2025', initial: '₹30,000', current: '₹0', returnVal: '+₹3,300', xirr: '12.6%' },
+                        { id: '#05829106CLSD', startDate: '20 Nov 2025', initial: '₹10,000', current: '₹0', returnVal: '+₹1,100', xirr: '12.3%' },
+                        { id: '#06829107CLSD', startDate: '05 Dec 2025', initial: '₹18,000', current: '₹0', returnVal: '+₹1,950', xirr: '12.7%' },
+                        { id: '#07829108CLSD', startDate: '15 Dec 2025', initial: '₹22,000', current: '₹0', returnVal: '+₹2,400', xirr: '12.5%' },
+                        { id: '#08829109CLSD', startDate: '28 Dec 2025', initial: '₹10,000', current: '₹0', returnVal: '+₹1,200', xirr: '12.8%' }
+                    ]
+                }
+            },
+            'Growth X': {
+                xirr: 12.2,
+                active: {
+                    current: '₹50,000', initial: '₹1,20,000', lent: '₹1,17,600', returns: '+₹12,400', principalRecd: '₹70,000', interestRecd: '₹12,400', netRepaid: '₹82,400', npa: '0.12% (₹60)',
+                    lockins: [
+                        { id: '#09128383LKM1', startDate: '05 Jan 2026', initial: '₹30,000', current: '₹12,000', returnVal: '+₹3,100', xirr: '12.2%' },
+                        { id: '#09128383LKM2', startDate: '14 Jan 2026', initial: '₹25,000', current: '₹10,000', returnVal: '+₹2,600', xirr: '12.1%' },
+                        { id: '#09128383LKM3', startDate: '01 Feb 2026', initial: '₹20,000', current: '₹8,000',  returnVal: '+₹2,100', xirr: '12.3%' },
+                        { id: '#09128383LKM4', startDate: '15 Feb 2026', initial: '₹25,000', current: '₹11,000', returnVal: '+₹2,500', xirr: '12.0%' },
+                        { id: '#09128383LKM5', startDate: '01 Mar 2026', initial: '₹20,000', current: '₹9,000',  returnVal: '+₹2,100', xirr: '12.4%' }
+                    ]
+                },
+                closed: {
+                    current: '₹0', initial: '₹80,000', lent: '₹78,400', returns: '+₹8,200', principalRecd: '₹80,000', interestRecd: '₹8,200', netRepaid: '₹88,200', npa: '0.00% (₹0)',
+                    lockins: [
+                        { id: '#03829102CLSD1', startDate: '15 Sep 2025', initial: '₹20,000', current: '₹0', returnVal: '+₹2,050', xirr: '12.1%' },
+                        { id: '#03829102CLSD2', startDate: '01 Oct 2025', initial: '₹30,000', current: '₹0', returnVal: '+₹3,100', xirr: '12.2%' },
+                        { id: '#03829102CLSD3', startDate: '20 Oct 2025', initial: '₹15,000', current: '₹0', returnVal: '+₹1,500', xirr: '12.0%' },
+                        { id: '#03829102CLSD4', startDate: '10 Nov 2025', initial: '₹15,000', current: '₹0', returnVal: '+₹1,550', xirr: '12.3%' }
+                    ]
+                }
+            },
+            'Growth Pro 6 Months': {
+                xirr: 13.1,
+                active: {
+                    current: '₹40,000', initial: '₹1,00,000', lent: '₹98,000', returns: '+₹10,850', principalRecd: '₹60,000', interestRecd: '₹10,850', netRepaid: '₹70,850', npa: '0.15% (₹60)',
+                    lockins: [
+                        { id: '#10293847PLM1', startDate: '10 Jan 2026', initial: '₹40,000', current: '₹16,000', returnVal: '+₹4,300', xirr: '13.1%' },
+                        { id: '#10293847PLM2', startDate: '01 Feb 2026', initial: '₹35,000', current: '₹14,000', returnVal: '+₹3,800', xirr: '13.2%' },
+                        { id: '#10293847PLM3', startDate: '20 Feb 2026', initial: '₹25,000', current: '₹10,000', returnVal: '+₹2,750', xirr: '13.0%' }
+                    ]
+                },
+                closed: {
+                    current: '₹0', initial: '₹50,000', lent: '₹49,000', returns: '+₹5,600', principalRecd: '₹50,000', interestRecd: '₹5,600', netRepaid: '₹55,600', npa: '0.00% (₹0)',
+                    lockins: [
+                        { id: '#10293847CLSD1', startDate: '10 Aug 2025', initial: '₹25,000', current: '₹0', returnVal: '+₹2,800', xirr: '13.0%' },
+                        { id: '#10293847CLSD2', startDate: '25 Aug 2025', initial: '₹25,000', current: '₹0', returnVal: '+₹2,800', xirr: '13.1%' }
+                    ]
+                }
+            },
+            'Growth Plus': {
+                xirr: 11.2,
+                active: {
+                    current: '₹30,000', initial: '₹80,000', lent: '₹78,400', returns: '+₹3,500', principalRecd: '₹50,000', interestRecd: '₹3,500', netRepaid: '₹53,500', npa: '0.11% (₹33)',
+                    lockins: [
+                        { id: '#55493821QWE1', startDate: '15 Feb 2026', initial: '₹40,000', current: '₹15,000', returnVal: '+₹1,800', xirr: '11.2%' },
+                        { id: '#55493821QWE2', startDate: '28 Feb 2026', initial: '₹40,000', current: '₹15,000', returnVal: '+₹1,700', xirr: '11.1%' }
+                    ]
+                },
+                closed: {
+                    current: '₹0', initial: '₹30,000', lent: '₹29,400', returns: '+₹2,100', principalRecd: '₹30,000', interestRecd: '₹2,100', netRepaid: '₹32,100', npa: '0.00% (₹0)',
+                    lockins: [
+                        { id: '#09281726CLSD', startDate: '01 Nov 2025', initial: '₹30,000', current: '₹0', returnVal: '+₹2,100', xirr: '11.0%' }
+                    ]
+                }
+            }
+        };
+
+        function refreshXIRRAction(btn, targetKey) {
+            const icon = btn.querySelector('i');
+            if (!icon) return;
+
+            icon.classList.add('animate-spin-active');
+            btn.disabled = true;
+
+            setTimeout(() => {
+                icon.classList.remove('animate-spin-active');
+                btn.disabled = false;
+
+                if (targetKey === 'overview') {
+                    const variation = (Math.random() * 0.2 - 0.1).toFixed(1);
+                    const updatedXIRR = (parseFloat(overviewXIRRVal) + parseFloat(variation)).toFixed(1);
+                    document.getElementById('overview-xirr-text').innerText = `Avg. XIRR ${updatedXIRR}%`;
+                } else if (targetKey === 'detail') {
+                    const data = plansDataMap[currentPlanName];
+                    const variation = (Math.random() * 0.2 - 0.1).toFixed(1);
+                    const updatedXIRR = (data.xirr + parseFloat(variation)).toFixed(1);
+                    document.getElementById('selected-plan-xirr').innerText = `Avg. XIRR ${updatedXIRR}%`;
+                } else if (plansDataMap[targetKey]) {
+                    const data = plansDataMap[targetKey];
+                    const variation = (Math.random() * 0.2 - 0.1).toFixed(1);
+                    const updatedXIRR = (data.xirr + parseFloat(variation)).toFixed(1);
+                    const el = document.getElementById(`xirr-val-${targetKey}`);
+                    if (el) el.innerText = `Avg. XIRR ${updatedXIRR}%`;
+                }
+            }, 800);
+        }
+
+        function updateBreadcrumbs(view) {
+            const bc = document.getElementById('breadcrumb');
+            if (view === 'portfolio') {
+                const subView = currentTab === 'p2p' ? 'P2P Edge Overview' : 'NCD Overview';
+                bc.innerHTML = `<span>Portfolio</span> <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-neutralScale-500 shrink-0"></i> <span class="text-brand-900 font-bold truncate">${subView}</span>`;
+            } else if (view === 'ncd_detail') {
+                bc.innerHTML = `
+                    <span class="hover:underline cursor-pointer" onclick="switchTab('ncd')">NCD Portfolio</span> 
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-neutralScale-500 shrink-0"></i> 
+                    <span class="text-brand-900 font-bold truncate">Details & Schedule</span>`;
+            } else if (view === 'plans_list') {
+                bc.innerHTML = `
+                    <span class="hover:underline cursor-pointer" onclick="navigateTo('portfolio')">Portfolio</span> 
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-neutralScale-500 shrink-0"></i> 
+                    <span class="text-brand-900 font-bold truncate">Invested Plans</span>`;
+            } else if (view === 'plan_detail') {
+                bc.innerHTML = `
+                    <span class="hover:underline cursor-pointer" onclick="navigateTo('portfolio')">Portfolio</span> 
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-neutralScale-500 shrink-0"></i> 
+                    <span class="hover:underline cursor-pointer" onclick="navigateTo('plans_list')">Invested Plans</span>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-neutralScale-500 shrink-0"></i> 
+                    <span class="text-brand-900 font-bold truncate">${currentPlanName}</span>`;
+            }
+            lucide.createIcons();
+        }
+
+        function navigateTo(view, param) {
+            document.getElementById('view-portfolio').classList.add('hidden');
+            document.getElementById('view-plans-list').classList.add('hidden');
+            document.getElementById('view-plan-detail').classList.add('hidden');
+            document.getElementById('view-ncd-detail').classList.add('hidden');
+
+            if (view === 'portfolio') {
+                document.getElementById('view-portfolio').classList.remove('hidden');
+            } else if (view === 'plans_list') {
+                document.getElementById('view-plans-list').classList.remove('hidden');
+            } else if (view === 'plan_detail') {
+                if (param) currentPlanName = param;
+                currentPlanState = 'active';
+                updatePlanDetailView();
+                document.getElementById('view-plan-detail').classList.remove('hidden');
+            }
+
+            updateBreadcrumbs(view);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updatePlanDetailView() {
+            const planObj = plansDataMap[currentPlanName];
+            const stateData = planObj[currentPlanState];
+
+            document.getElementById('selected-plan-title').innerText = currentPlanName;
+            document.getElementById('dynamic-add-funds-label').innerText = `Add Funds`;
+            document.getElementById('selected-plan-xirr').innerText = `Avg. XIRR ${planObj.xirr}%`;
+
+            document.getElementById('count-state-active').innerText = planObj.active.lockins.length;
+            document.getElementById('count-state-closed').innerText = planObj.closed.lockins.length;
+
+            document.getElementById('plan-current-val').innerText = stateData.current;
+            document.getElementById('plan-initial-val').innerText = stateData.initial;
+            document.getElementById('plan-lent-val').innerText = stateData.lent;
+            document.getElementById('plan-returns-val').innerText = stateData.returns;
+            document.getElementById('plan-principal-recd').innerText = stateData.principalRecd;
+            document.getElementById('plan-interest-recd').innerText = stateData.interestRecd;
+            document.getElementById('plan-net-repaid').innerText = stateData.netRepaid;
+            document.getElementById('plan-npa-text').innerText = stateData.npa;
+
+            const netReturnsIcon = document.getElementById('plan-net-returns-info-icon');
+            const tooltipHTML = getNetReturnsTooltipHTML(stateData.returns, stateData.lent, stateData.netRepaid, stateData.current);
+            netReturnsIcon.onclick = () => handleInfoTrigger(netReturnsIcon, tooltipHTML);
+            netReturnsIcon.onmouseenter = () => handleInfoTrigger(netReturnsIcon, tooltipHTML);
+
+            document.getElementById('lockin-table-heading').innerText = `${currentPlanState.toUpperCase()} LOCK-IN CONTRACTS`;
+            document.getElementById('lockin-state-badge').innerText = `Showing ${stateData.lockins.length} ${currentPlanState === 'active' ? 'Active' : 'Closed'} Rows`;
+
+            renderLockinTable(stateData.lockins);
+        }
+
+        function switchPlanState(state) {
+            currentPlanState = state;
+            const btnActive = document.getElementById('plan-state-btn-active');
+            const btnClosed = document.getElementById('plan-state-btn-closed');
+
+            if (state === 'active') {
+                btnActive.className = "flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg bg-white text-brand-900 shadow-xs transition";
+                btnClosed.className = "flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg text-neutralScale-500 hover:text-neutralScale-900 transition";
+            } else {
+                btnClosed.className = "flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg bg-white text-brand-900 shadow-xs transition";
+                btnActive.className = "flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg text-neutralScale-500 hover:text-neutralScale-900 transition";
+            }
+
+            updatePlanDetailView();
+        }
+
+        function renderLockinTable(lockins) {
+            const tbody = document.getElementById('lockin-table-body');
+            tbody.innerHTML = '';
+
+            if (!lockins || lockins.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-neutralScale-500 font-medium">No ${currentPlanState} lock-in contracts found for this plan.</td></tr>`;
+                return;
+            }
+
+            lockins.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-neutralScale-50 transition border-b border-neutralScale-100";
+                tr.innerHTML = `
+                    <td class="py-3.5 px-4 sm:px-6 font-bold text-brand-900">${item.id}</td>
+                    <td class="py-3.5 px-4 sm:px-6 font-medium text-neutralScale-500">${item.startDate}</td>
+                    <td class="py-3.5 px-4 sm:px-6 font-semibold text-neutralScale-900">${item.initial}</td>
+                    <td class="py-3.5 px-4 sm:px-6 font-bold ${item.current === '₹0' ? 'text-neutralScale-500' : 'text-neutralScale-900'}">${item.current}</td>
+                    <td class="py-3.5 px-4 sm:px-6 font-bold text-brand-600">${item.returnVal}</td>
+                    <td class="py-3.5 px-4 sm:px-6 font-bold text-neutralScale-900 text-right font-mono">${item.xirr}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addFundsAction(planName) {
+            alert(`Redirecting to payment/investment flow to add funds to ${planName}.`);
+        }
+
+        // Initialize Application
+        initPortfolioLifetimeEarnings();
+        updateBreadcrumbs('portfolio');
+    </script>
+</body>
+</html>
